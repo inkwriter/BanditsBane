@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bandit's Bane</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css_folder/style.css">
+  </head>
+  <body>
+    <main>
+        <h1>Bandit's Bane</h1>
+        <p id="intro-paragraph">In the once-peaceful village of Woodhurst, nestled between the towering Forest of The Fae and the serene Lake Mirren, a dark shadow looms. For months, the community has suffered under the relentless assault of the notorious <em>Crimson Wolves</em>, a band of ruthless bandits who plunder goods and sow fear, shattering the tranquility of the village.</p>
+        <br>
+        <p><strong>Your Quest Begins:</strong></p>
+        <br>
+        <p>Summoned by Elara, the wise village elder, you, a seasoned adventurer renowned for your bravery, are tasked with a daunting challenge. The bandits, unlike any faced before, are cunning, well-organized, and commanded by the enigmatic <em>Bandit King</em>. Your mission is clear: <strong>defeat the bandits, gain strength, and end the reign of terror.</strong></p>
+        <div>
+          <img src="img_folder/village.jpeg" id="village">
+        </div>
+        <div class="input-section">
+          <form id="nameForm">
+            <label for="name">What is your name?</label>
+            <input type="text" id="name" name="name">
+            <button type="submit" class="journey-button, introButton">Journey On!</button>
+          </form>
+        </div>
+        <p id="introMessage" class="hidden">Welcome, <span id="playerName">Test</span>!</p>
+        <a href="pages/choiceScreen.html">
+          <button class="introButton hidden" id="choiceBtn">Customize</button>
+        </a>
+    </main>
+    <script type="module" src="./js_folder/gameData.js"></script>
+    <script type="module" src="./js_folder/index.js"></script>
+  </body>
+</html>
