@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./css_folder/style.css">
+    <link rel="stylesheet" href="./assets/css/style.css">
   </head>
   <body>
     <main>
@@ -17,10 +17,11 @@
         <br>
         <p><strong>Your Quest Begins:</strong></p>
         <br>
-        <p>Summoned by Elara, the wise village elder, you, a seasoned adventurer renowned for your bravery, are tasked with a daunting challenge. The bandits, unlike any faced before, are cunning, well-organized, and commanded by the enigmatic <em>Bandit King</em>. Your mission is clear: <strong>defeat the bandits, gain strength, and end the reign of terror.</strong></p>
+        <p>You are Xander Oakenshield, a seasoned adventurer renowned for your bravery, are tasked with a daunting challenge. The bandits, unlike any faced before, are cunning, well-organized, and commanded by the enigmatic <em>Bandit King</em>. Your mission is clear: <strong>defeat the bandits, gain strength, and end the reign of terror.</strong></p>
         <div>
-          <img src="img_folder/village.jpeg" id="village">
+          <img src="./assets/img_folder/backgrounds/village.jpeg" id="village">
         </div>
+           <!--
         <div class="input-section">
           <form id="nameForm">
             <label for="name">What is your name?</label>
@@ -28,12 +29,11 @@
             <button type="submit" class="journey-button, introButton">Journey On!</button>
           </form>
         </div>
-        <p id="introMessage" class="hidden">Welcome, <span id="playerName">Test</span>!</p>
-        <a href="pages/choiceScreen.html">
-          <button class="introButton hidden" id="choiceBtn">Customize</button>
+        <p id="introMessage" class="hidden">Welcome, <span id="playerName">Test</span>!</p> -->
+        <a href="camp.html">
+          <button class="introButton" id="choiceBtn">Onward!</button>
         </a>
     </main>
-    <script type="module" src="./js_folder/gameData.js"></script>
-    <script type="module" src="./js_folder/index.js"></script>
+    <script src="/app.js"></script>
   </body>
 </html>
