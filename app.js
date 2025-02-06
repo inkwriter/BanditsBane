@@ -62,8 +62,8 @@ function addToInventory(itemName) {
   } else if (itemName === "Poison") {// Import dependencies
     
     // DOM Elements
-    const dialogueBox = document.getElementById("shopDialogueBox");
-    const dialogueText = document.getElementById("shopDialogueText");
+    const shopDialogueBox = document.getElementById("shopDialogueBox");
+    const shopDialogueText = document.getElementById("shopDialogueText");
     const playerNameElem = document.getElementById("playerName");
     const goldElem = document.getElementById("gold");
     const healthPotionsElem = document.getElementById("healthPotions");
@@ -82,28 +82,28 @@ function addToInventory(itemName) {
     }
     
     // Dialogue Functions
-    function updateDialogue() {
-      const dialogues = [
+    function updateShopDialogue() {
+      const shopDialogues = [
         "Shop Keeper: 'Thank you so much for your purchase!'",
         "Shop Keeper: 'I've had my eye on that too!'",
         "Shop Keeper: 'Have a great day!'",
         "Shop Keeper: 'We should be getting some new items soon!'",
       ];
-      dialogueText.textContent = dialogues[Math.floor(Math.random() * dialogues.length)];
+      shopDialogueText.textContent = shopDialogues[Math.floor(Math.random() * shopDialogues.length)];
     }
     
     function showDialogue() {
-      if (dialogueBox) {
-        dialogueBox.classList.remove("hidden");
-        updateDialogue();
+      if (shopDialogueBox) {
+        shopDialogueBox.classList.remove("hidden");
+        updateShopDialogue();
       } else {
         console.error("Dialogue box not found in the DOM");
       }
     }
     
-    function hideDialogue() {
-      if (dialogueBox) {
-        dialogueBox.classList.add("hidden");
+    function hideShopDialogue() {
+      if (shopDialogueBox) {
+        shopDialogueBox.classList.add("hidden");
       } else {
         console.error("Dialogue box not found in the DOM");
       }
@@ -117,7 +117,7 @@ function addToInventory(itemName) {
         gameState.inventory.potions += 1; // Add to inventory for potions
         savePlayerData(); // Save updated game state
         updateShopUI(); // Update UI
-        showDialogue(); // Show dialogue
+        showShopDialogue(); // Show dialogue
         setTimeout(hideDialogue, 3000); // Hide dialogue after 3 seconds
       } else {
         alert("Not enough gold!");
@@ -128,8 +128,8 @@ function addToInventory(itemName) {
     document.addEventListener("DOMContentLoaded", () => {
       loadPlayerData(); // Load saved game state
       updateShopUI(); // Update UI with saved data
-      showDialogue(); // Show opening dialogue
-      updateGameUI();
+      showShopDialogue(); // Show opening dialogue
+      updateUI();
       setTimeout(hideDialogue, 3000); // Hide after 3 seconds
       // Buy potion button listener
       document.getElementById("buyPotionsBtn").addEventListener("click", () => {
@@ -148,11 +148,11 @@ function addToInventory(itemName) {
 
 // === 3. Dialogue System ===
 // Select DOM elements
-const dialogueBox = document.getElementById("shopDialogueBox");
-const dialogueText = document.getElementById("shopDialogueText");
+const shopDialogueBoxialogueBox = document.getElementById("shopDialogueBox");
+const shopDialogueText = document.getElementById("shopDialogueText");
 
 // Dialogue options
-const dialogues = [
+const shopDialogues = [
   "Shop Keeper: 'Thank you so much for your purchase!'",
   "Shop Keeper: 'I've had my eye on that too!'",
   "Shop Keeper: 'Have a great day!'",
@@ -160,15 +160,15 @@ const dialogues = [
 ];
 
 // Function to update dialogue with random messages
-function updateDialogue() {
-  dialogueText.textContent = dialogues[Math.floor(Math.random() * dialogues.length)];
+function shopUpdateDialogue() {
+  shopDialogueText.textContent = shopDialogues[Math.floor(Math.random() * shopDialogues.length)];
 }
 
 // Show the dialogue box
-function showDialogue() {
-  if (dialogueBox) {
-    dialogueBox.classList.remove("hidden");
-    updateDialogue(); // Update with a random message
+function showShopDialogue() {
+  if (shopDialogueBox) {
+    shopDialogueBox.classList.remove("hidden");
+    shopUpdateDialogue(); // Update with a random message
   } else {
     console.error("Dialogue box not found in the DOM");
   }
@@ -176,8 +176,8 @@ function showDialogue() {
 
 // Hide the dialogue box
 function hideDialogue() {
-  if (dialogueBox) {
-    dialogueBox.classList.add("hidden");
+  if (shopDialogueBox) {
+    shopDialogueBox.classList.add("hidden");
   } else {
     console.error("Dialogue box not found in the DOM");
   }
@@ -213,8 +213,9 @@ function updateShopUI() {
 // === 6. Game Initialization ===
 loadPlayerData();
 updateShopUI();
+updateUI();
 
 // Show dialogue when the shop page is first loaded
-showDialogue();
+showShopDialogue();
 setTimeout(hideDialogue, 3000); // Hide dialogue after 3 seconds
 console.log("Game initialized.");
