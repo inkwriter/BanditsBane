@@ -261,10 +261,25 @@ function updateShopUI() {
   console.log("Shop UI updated.");
 }
 
+function useItem() {
+  console.log("Use Item function triggered...");
+  if (gameState.inventory.potions > 0) {
+      gameState.hp = Math.min(100, gameState.hp + 10); // Heal player
+      gameState.inventory.potions--; // Deduct potion
+      alert("You used a health potion and restored 10 HP!");
+      updateCombatUI(); // Refresh UI
+      savePlayerData(); // Save updated game state
+  } else {
+      alert("You have no health potions left!");
+      console.log("No health potions available to use.");
+  }
+}
+
 document.getElementById("buyPotionsBtn")?.addEventListener("click", () => {
   handleBuyItem({ name: "Potion", price: 10 });
 });
 
+document.getElementById("useItemBtn")?.addEventListener("click", useItem);
 
 document.addEventListener("DOMContentLoaded", () => {
   loadPlayerData();  // <- Load data as soon as the game starts
