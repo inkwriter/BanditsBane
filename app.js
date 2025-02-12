@@ -238,6 +238,7 @@ function endBattle() {
     gameState.xp += bandit.xpReward;
     console.log("Battle won!");
     alert(`You defeated the Bandit! +${bandit.goldReward} Gold, +${bandit.xpReward} XP`);
+    levelUp();
     savePlayerData();
     updateUI();
 }
@@ -272,6 +273,27 @@ function useItem() {
   } else {
       alert("You have no health potions left!");
       console.log("No health potions available to use.");
+  }
+}
+
+function levelUp() {
+  if (gameState.xp >= 100) {
+    gameState.level++;
+    console.log("Adding level")
+    gameState.xp -= 100;
+    console.log("Removing xp")
+    gameState.hp += 5;
+    alert("You leveled up!");
+
+    gameState.stats.attack += 1;
+    gameState.stats.defense += 1;
+    gameState.stats.speed += 1;
+    console.log("Updated stats after leveling up:", gameState.stats);
+
+    savePlayerData();
+    updateUI();
+  } else {
+    savePlayerData();
   }
 }
 
