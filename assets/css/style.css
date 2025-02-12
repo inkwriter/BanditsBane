@@ -158,10 +158,6 @@ a button {
     width: 60px;
 }
 
-.hidden {
-    display: none;
-}
-
 #animated-gif {
     width: 80%;
     height: 250px;
@@ -444,6 +440,10 @@ stats-list p {
 
 #discovered {
     margin-top: 25px;
+}
+
+.hidden {
+    display: none;
 }
 
 /* For tablets and medium-sized devices (768px and up) */
