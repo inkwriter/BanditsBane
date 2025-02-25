@@ -13,6 +13,29 @@ p {
     margin: 1px;
 }
 
+#actionBox {
+    background-color: black;
+    color: white;
+    font-family: 'Courier New', monospace; /* Mimics old PC text */
+    border: 2px solid #ccc; /* Optional: a light gray border for that pixel feel */
+    padding: 10px;
+    margin: 10px 0; /* Space it between image and buttons */
+    max-width: 80%; /* Keep it compact */
+    min-height: 40px; /* Ensure it’s visible even when empty */
+    text-align: left; /* Left-aligned like old game text */
+    border: 2px solid #ccc;
+  }
+  
+  #actionBox.hidden {
+    display: none;
+  }
+
+  
+  .buttons {
+    display: flex;
+    gap: 10px;
+  }
+
 body {
     background-color:  #1b4332;;
     color: #e9ffdb;
