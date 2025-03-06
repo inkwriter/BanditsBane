@@ -47,6 +47,24 @@ const enemies = {
     xpReward: 40,
     image: "/assets/img_folder/enemies/bountyHunter.jpg"
   },
+  trickster: {
+    name: "Trickster",
+    hp: 1,
+    ac: 18,
+    attack: 8,
+    goldReward: 5,
+    xpReward: 70,
+    image: "/assets/img_folder/enemies/trickster.jpg"
+  },
+  thief: {
+    name: "Thief",
+    hp: 15,
+    ac: 15,
+    attack: 6,
+    goldReward: 150,
+    xpReward: 10,
+    image: "/assets/img_folder/enemies/thief.jpg"
+  },
 };
 
 
@@ -118,6 +136,13 @@ function rollDice(sides) {
 function savePlayerData() {
   console.log("Saving player data...");
   localStorage.setItem("gameState", JSON.stringify(gameState));
+}
+
+function checkGameOver() {
+  if (gameState.hp <= 0) {
+      localStorage.setItem("gameOver", "true"); // Store game over flag
+      window.location.href = "gameover.html"; // Redirect to game over screen
+  }
 }
 
 const shopDialogueBox = document.getElementById("shopDialogueBox");
@@ -356,10 +381,42 @@ function endBattle(enemy) {
 
   document.getElementById("combat-container").classList.add("hidden");
   document.querySelector(".buttons").classList.add("hidden"); // Fix: Use class selector
-  document.getElementById("forestBtn").classList.remove("hidden");
+
   document.getElementById("campBtn").classList.remove("hidden");
+  console.log("end battle");
+  document.getElementById("forestBtn").classList.remove("hidden");
   // actionBox stays visible with victory message
 }
+
+function runAway() {
+  if (!battleActive || !currentEnemy) {
+    console.log("No active battle to run from!");
+    return;
+  }
+
+  const damage = rollDice(4);
+  gameState.hp -= damage;
+  console.log(`You flee, taking ${damage} damage. HP now: ${gameState.hp}`);
+  showAction(`You flee from the ${currentEnemy.name}, taking ${damage} damage in your escape!`);
+
+  updateUI();
+  savePlayerData();
+
+  if (gameState.hp <= 0) {
+    gameOver();
+    return;
+  }
+
+  battleActive = false;
+  currentEnemy = null;
+  document.getElementById("combat-container").classList.add("hidden");
+  document.querySelector(".buttons").classList.add("hidden");
+
+  setTimeout(() => {
+    window.location.href = "camp.html";
+  }, 1500);
+}
+
 
 function gameOver() {
   battleActive = false;
@@ -472,8 +529,12 @@ document.getElementById("forestBtn")?.addEventListener("click", function () {
 
   let enemyType;
 
-  if (roll >= 1 && roll <= 12) {
+  if (roll >= 1 && roll <= 10) {
     enemyType = "bandit";
+  } else if (roll === 11) {
+    enemyType = "thief";
+  } else if (roll === 12) {
+    enemyType = "trickster";
   } else if (roll >= 13 && roll <= 16) {
     enemyType = "wolves";
   } else if (roll >= 17 && roll <= 20) {
@@ -510,7 +571,7 @@ document.getElementById("campBtn")?.addEventListener("click", () => {
   const randomMessage = campMessages[Math.floor(Math.random() * campMessages.length)];
   showAction(randomMessage);
   document.getElementById("campBtn").classList.add("hidden");
-  document.getElementById("forestBtn").classList.remove("hidden");
+  //document.getElementById("forestBtn").classList.remove("hidden");
   document.querySelector(".buttons").classList.add("hidden");
   updateUI();
   savePlayerData();
@@ -538,7 +599,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const actionBox = document.getElementById("actionBox");
     const actionText = document.getElementById("actionText");
     const buttons = document.querySelector(".buttons");
-    const forestBtn = document.getElementById("forestBtn");
     const enemyHPDisplay = document.getElementById("enemyHP");
 
     startBattle(enemyType);
@@ -550,7 +610,6 @@ document.addEventListener("DOMContentLoaded", () => {
     combatContainer.classList.remove("hidden");
     actionBox.classList.remove("hidden");
     buttons.classList.remove("hidden");
-    forestBtn.classList.add("hidden");
     document.getElementById("campBtn").classList.add("hidden");
   }
 });
@@ -577,3 +636,12 @@ document.getElementById("shortRestBtn")?.addEventListener("click", () => {
 
 document.getElementById("attackBtn")?.addEventListener("click", startAutoBattle);
 updateUI();
+
+document.getElementById("runAwayBtn")?.addEventListener("click", runAway);
+
+document.getElementById("restartBtn").addEventListener("click", function () {
+  localStorage.clear(); // Clear all saved data
+  window.location.href = "index.html"; // Redirect to the start screen
+});
+
+
