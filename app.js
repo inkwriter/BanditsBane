@@ -12,7 +12,7 @@ const gameState = {
     defense: 1,
     speed: 2,
   },
-  baseAC: 12,
+  baseAC: 10,
   gold: 100,
   inventory: {
     potions: 0,
@@ -31,7 +31,8 @@ const enemies = {
   bandit: {
     name: "Bandit",
     hp: 10,
-    stats: {attack: 2, speed: 3, defense: 2},
+    stats: { attack: 2, speed: 3, defense: 2 },
+    acBonus: 0,
     goldReward: 10,
     xpReward: 20,
     image: "/assets/img_folder/enemies/bandit.jpeg"
@@ -39,7 +40,8 @@ const enemies = {
   wolves: {
     name: "Wolves",
     hp: 15,
-    stats: {attack: 3, speed: 8, defense: 4},
+    stats: { attack: 3, speed: 8, defense: 4 },
+    acBonus: 1,
     goldReward: 15,
     xpReward: 25,
     image: "/assets/img_folder/enemies/wolves.jpg"
@@ -47,7 +49,8 @@ const enemies = {
   bountyHunter: {
     name: "Bounty Hunter",
     hp: 20,
-    stats: {attack: 4, speed: 5, defense: 10},
+    stats: { attack: 4, speed: 5, defense: 10 },
+    acBonus: 2,
     goldReward: 25,
     xpReward: 40,
     image: "/assets/img_folder/enemies/bountyHunter.jpg"
@@ -55,7 +58,8 @@ const enemies = {
   trickster: {
     name: "Trickster",
     hp: 1,
-    stats: {attack: 8, speed: 15, defense: 5},
+    stats: { attack: 8, speed: 15, defense: 5 },
+    acBonus: 4,
     goldReward: 5,
     xpReward: 70,
     image: "/assets/img_folder/enemies/trickster.jpg"
@@ -63,13 +67,13 @@ const enemies = {
   thief: {
     name: "Thief",
     hp: 15,
-    stats: {attack: 6, speed: 10, defense: 8},
+    stats: { attack: 6, speed: 10, defense: 8 },
+    acBonus: 1,
     goldReward: 150,
     xpReward: 10,
     image: "/assets/img_folder/enemies/thief.jpg"
   },
 };
-
 
 console.log("Game state initialized:", gameState);
 
@@ -101,6 +105,45 @@ const restOutcomes = {
   ]
 };
 
+// === 2. Utility Functions ===
+function rollDice(sides) {
+  return Math.floor(Math.random() * sides) + 1;
+}
+
+function savePlayerData() {
+  console.log("Saving player data...", JSON.stringify(gameState));
+  localStorage.setItem("gameState", JSON.stringify(gameState));
+}
+
+function loadPlayerData() {
+  console.log("Loading player data...");
+  const savedData = localStorage.getItem("gameState");
+  try {
+    if (savedData) {
+      const parsedData = JSON.parse(savedData);
+      Object.assign(gameState, parsedData);
+      console.log("Game state after loading:", gameState);
+    } else {
+      console.log("No saved game data found. Starting fresh.");
+    }
+  } catch (error) {
+    console.error("Error loading game data, resetting storage:", error);
+    localStorage.removeItem("gameState");
+  }
+}
+
+function calculateAC(baseAC, speed, defense, acBonus = 0) {
+  return baseAC + Math.min(2, Math.floor(speed / 5)) + Math.min(2, Math.floor(defense / 5)) + acBonus;
+}
+
+function calculateAttacks(speed) {
+  if (speed >= 20) return 5;
+  if (speed >= 15) return 4;
+  if (speed >= 10) return 3;
+  if (speed >= 5) return 2;
+  return 1;
+}
+
 function updateUI() {
   const elements = {
     playerName: document.getElementById("playerName"),
@@ -131,20 +174,32 @@ function updateUI() {
   }
 }
 
-// === 2. Utility Functions ===
-function rollDice(sides) {
-  return Math.floor(Math.random() * sides) + 1;
-}
-
-function savePlayerData() {
-  console.log("Saving player data...");
-  localStorage.setItem("gameState", JSON.stringify(gameState));
-}
-
 function checkGameOver() {
   if (gameState.hp <= 0) {
-      localStorage.setItem("gameOver", "true"); // Store game over flag
-      window.location.href = "gameover.html"; // Redirect to game over screen
+    localStorage.setItem("gameOver", "true");
+    window.location.href = "gameover.html";
+  }
+}
+
+// === 3. Inventory and Shop Functions ===
+function addToInventory(itemName) {
+  console.log(`Adding ${itemName} to inventory...`);
+  if (itemName === "Potion") gameState.inventory.potions += 1;
+  if (itemName === "Poison") gameState.inventory.poison += 1;
+  console.log("Inventory updated:", gameState.inventory);
+}
+
+function handleBuyItem(item) {
+  if (gameState.gold >= item.price) {
+    console.log(`Buying ${item.name}...`);
+    gameState.gold -= item.price;
+    addToInventory(item.name);
+    savePlayerData();
+    updateShopUI();
+    showShopDialogue();
+    setTimeout(hideShopDialogue, 3000);
+  } else {
+    alert("Not enough gold!");
   }
 }
 
@@ -152,83 +207,48 @@ const shopDialogueBox = document.getElementById("shopDialogueBox");
 const shopDialogueText = document.getElementById("shopDialogueText");
 
 function showShopDialogue() {
-    if (shopDialogueBox) {
-        shopDialogueBox.classList.remove("hidden");
-        const shopDialogues = [
-            "Shop Keeper: 'Thank you so much for your purchase!'",
-            "Shop Keeper: 'I've had my eye on that too!'",
-            "Shop Keeper: 'Have a great day!'",
-            "Shop Keeper: 'We should be getting some new items soon!'",
-        ];
-        shopDialogueText.textContent = shopDialogues[Math.floor(Math.random() * shopDialogues.length)];
-    } else {
-        console.error("Shop dialogue box not found.");
-    }
+  if (shopDialogueBox) {
+    shopDialogueBox.classList.remove("hidden");
+    const shopDialogues = [
+      "Shop Keeper: 'Thank you so much for your purchase!'",
+      "Shop Keeper: 'I've had my eye on that too!'",
+      "Shop Keeper: 'Have a great day!'",
+      "Shop Keeper: 'We should be getting some new items soon!'",
+    ];
+    shopDialogueText.textContent = shopDialogues[Math.floor(Math.random() * shopDialogues.length)];
+  } else {
+    console.error("Shop dialogue box not found.");
+  }
 }
 
 function hideShopDialogue() {
-    if (shopDialogueBox) {
-        shopDialogueBox.classList.add("hidden");
-    } else {
-        console.error("Shop dialogue box not found.");
-    }
-}
-
-function handleBuyItem(item) {
-  if (gameState.gold >= item.price) {
-      console.log(`Buying ${item.name}...`);
-      gameState.gold -= item.price;
-      addToInventory(item.name);
-      savePlayerData();
-      updateShopUI();
-      showShopDialogue(); // Show a confirmation message
-      setTimeout(hideShopDialogue, 3000); // Hide after 3 seconds
+  if (shopDialogueBox) {
+    shopDialogueBox.classList.add("hidden");
   } else {
-      alert("Not enough gold!");
+    console.error("Shop dialogue box not found.");
   }
 }
 
+function updateShopUI() {
+  document.getElementById("playerName").textContent = gameState.playerName || "Player";
+  document.getElementById("gold").textContent = gameState.gold;
+  document.getElementById("healthPotions").textContent = gameState.inventory.potions;
+  document.getElementById("poison").textContent = gameState.inventory.poison;
+  console.log("Shop UI updated.");
+}
 
-function loadPlayerData() {
-  console.log("Loading player data...");
-  const savedData = localStorage.getItem("gameState");
-
-  try {
-      if (savedData) {
-          const parsedData = JSON.parse(savedData);
-          Object.assign(gameState, parsedData);
-          console.log("Game state after loading:", gameState);
-      } else {
-          console.log("No saved game data found. Starting fresh.");
-      }
-  } catch (error) {
-      console.error("Error loading game data, resetting storage:", error);
-      localStorage.removeItem("gameState"); // Fix corruption
+function useItem() {
+  console.log("Use Item function triggered...");
+  if (gameState.inventory.potions > 0) {
+    gameState.hp = Math.min(100, gameState.hp + 10);
+    gameState.inventory.potions--;
+    alert("You used a health potion and restored 10 HP!");
+    updateUI(); // Changed from updateCombatUI (undefined)
+    savePlayerData();
+  } else {
+    alert("You have no health potions left!");
+    console.log("No health potions available to use.");
   }
-}
-
-function calculateAC(baseAC, speed, defense) {
-  return baseAC + Math.min(2, Math.floor(speed / 5)) + Math.min(2, Math.floor(defense / 5));
-}
-
-function calculateAttacks(speed) {
-  if (speed >= 20) return 5;
-  if (speed >= 15) return 4;
-  if (speed >= 10) return 3;
-  if (speed >= 5) return 2;
-  return 1;
-}
-
-function calculateAC(baseAC, speed, defense) {
-  return baseAC + Math.min(2, Math.floor(speed / 5)) + Math.min(2, Math.floor(defense / 5));
-}
-
-// === 3. Inventory Management ===
-function addToInventory(itemName) {
-  console.log(`Adding ${itemName} to inventory...`);
-  if (itemName === "Potion") gameState.inventory.potions += 1;
-  if (itemName === "Poison") gameState.inventory.poison += 1;
-  console.log("Inventory updated:", gameState.inventory);
 }
 
 // === 4. Dialogue System ===
@@ -258,81 +278,70 @@ function hideDialogue() {
   }
 }
 
-// === Auto-Battle System ===
+function showAction(text) {
+  const actionBox = document.getElementById("actionBox");
+  const actionText = document.getElementById("actionText");
+  if (actionBox && actionText) {
+    actionText.textContent = text;
+    actionBox.classList.remove("hidden");
+  } else {
+    console.error("Action box not found!");
+  }
+}
 
+// === 5. Auto-Battle System ===
 let battleActive = false;
 let currentEnemy;
 
 function startBattle(enemyType) {
   if (!enemies[enemyType]) {
-    console.error("Invalid enemy type!");
+    console.error("Invalid enemy type:", enemyType);
     return;
   }
-  currentEnemy = JSON.parse(JSON.stringify(enemies[enemyType]));
-  console.log(`A wild ${currentEnemy.name} appears!`, currentEnemy);
+  const enemyData = enemies[enemyType];
+  currentEnemy = {
+    ...enemyData,
+    ac: calculateAC(10, enemyData.stats.speed, enemyData.stats.defense, enemyData.acBonus || 0)
+  };
+  gameState.ac = calculateAC(gameState.baseAC, gameState.stats.speed + gameState.weapon.speed, gameState.stats.defense + gameState.weapon.defense);
+  console.log(`A wild ${currentEnemy.name} appears! AC: ${currentEnemy.ac}`, currentEnemy);
   showAction(`A ${currentEnemy.name} appears, ready to fight!`);
   updateUI();
 
-  // If on ambush.html, automatically start the battle after a short delay
   if (window.location.pathname.includes("ambush.html")) {
     setTimeout(startAutoBattle, 1000);
   }
 }
 
 function startAutoBattle() {
-  if (battleActive || !currentEnemy) return; // Prevent starting if already active or no enemy
+  if (battleActive || !currentEnemy) return;
   battleActive = true;
   console.log("Battle started!");
   showAction(`A ${currentEnemy.name} appears, ready to fight!`);
-  autoBattleLoop(); // Kick off the combat loop
-}
-
-// Update startBattle to set up the enemy without auto-starting (except for ambush.html)
-function startBattle(enemyType) {
-  if (!enemies[enemyType]) {
-    console.error("Invalid enemy type!");
-    return;
-  }
-  currentEnemy = JSON.parse(JSON.stringify(enemies[enemyType]));
-  console.log(`A wild ${currentEnemy.name} appears!`, currentEnemy);
-  showAction(`A ${currentEnemy.name} appears, ready to fight!`); // Changed to showAction for consistency
-  updateUI();
-
-  // Only auto-start on ambush.html
-  if (window.location.pathname.includes("ambush.html")) {
-    setTimeout(startAutoBattle, 1000);
-  }
+  autoBattleLoop();
 }
 
 function autoBattleLoop() {
-    if (!battleActive) return;
+  if (!battleActive) return;
 
-    if (gameState.hp <= 0) {
-        gameOver();
-        return;
-    }
-    if (currentEnemy && currentEnemy.hp <= 0) {
-        endBattle(currentEnemy);
-        return;
-    }
+  if (gameState.hp <= 0) {
+    gameOver();
+    return;
+  }
+  if (currentEnemy && currentEnemy.hp <= 0) {
+    endBattle(currentEnemy);
+    return;
+  }
 
-    setTimeout(() => {
-        if (typeof playerAttack === "function") {
-            playerAttack();
-            if (currentEnemy && currentEnemy.hp > 0) {
-                setTimeout(() => {
-                    if (typeof enemyAttack === "function") {
-                        enemyAttack();
-                        autoBattleLoop();
-                    } else {
-                        console.error("enemyAttack is not defined!");
-                    }
-                }, 1000);
-            }
-        } else {
-            console.error("playerAttack is not defined!");
-        }
-    }, 1000);
+  setTimeout(() => {
+    playerAttack();
+    if (currentEnemy && currentEnemy.hp > 0) {
+      setTimeout(() => {
+        enemyAttack();
+        autoBattleLoop();
+      }, 1000);
+    }
+  }, 1000);
 }
 
 function playerAttack() {
@@ -362,7 +371,7 @@ function playerAttack() {
 function enemyAttack() {
   if (!battleActive) return;
 
-  let attackRoll = rollDice(20) + currentEnemy.attack;
+  let attackRoll = rollDice(20) + currentEnemy.stats.attack;
   console.log(`${currentEnemy.name} rolls: ${attackRoll} (needs ${gameState.ac} to hit)`);
 
   if (attackRoll >= gameState.ac) {
@@ -397,13 +406,10 @@ function endBattle(enemy) {
   savePlayerData();
   updateUI();
 
-  document.getElementById("combat-container").classList.add("hidden");
-  document.querySelector(".buttons").classList.add("hidden"); // Fix: Use class selector
-
-  document.getElementById("campBtn").classList.remove("hidden");
-  console.log("end battle");
-  document.getElementById("forestBtn").classList.remove("hidden");
-  // actionBox stays visible with victory message
+  document.getElementById("combat-container")?.classList.add("hidden");
+  document.querySelector(".buttons")?.classList.add("hidden");
+  document.getElementById("campBtn")?.classList.remove("hidden");
+  document.getElementById("forestBtn")?.classList.remove("hidden");
 }
 
 function runAway() {
@@ -427,87 +433,34 @@ function runAway() {
 
   battleActive = false;
   currentEnemy = null;
-  document.getElementById("combat-container").classList.add("hidden");
-  document.querySelector(".buttons").classList.add("hidden");
+  document.getElementById("combat-container")?.classList.add("hidden");
+  document.querySelector(".buttons")?.classList.add("hidden");
 
   setTimeout(() => {
     window.location.href = "camp.html";
   }, 1500);
 }
 
-
 function gameOver() {
   battleActive = false;
   showAction("You have been defeated!");
   setTimeout(() => {
     window.location.href = "gameover.html";
-  }, 2000); // Delay to show defeat message
-}
-
-function showAction(text) {
-  const actionBox = document.getElementById("actionBox");
-  const actionText = document.getElementById("actionText");
-  if (actionBox && actionText) {
-    actionText.textContent = text;
-    actionBox.classList.remove("hidden");
-  } else {
-    console.error("Action box not found!");
-  }
-}
-
-function savePlayerData() {
-  console.log("Saving player data...", JSON.stringify(gameState)); // Ensure it's JSON
-  localStorage.setItem("gameState", JSON.stringify(gameState));
-}
-
-function updateShopUI() {
-  document.getElementById("playerName").textContent = gameState.playerName || "Player";
-  document.getElementById("gold").textContent = gameState.gold;
-  document.getElementById("healthPotions").textContent = gameState.inventory.potions;
-  document.getElementById("poison").textContent = gameState.inventory.poison;
-  console.log("Shop UI updated.");
-}
-
-function useItem() {
-  console.log("Use Item function triggered...");
-  if (gameState.inventory.potions > 0) {
-      gameState.hp = Math.min(100, gameState.hp + 10); // Heal player
-      gameState.inventory.potions--; // Deduct potion
-      alert("You used a health potion and restored 10 HP!");
-      updateCombatUI(); // Refresh UI
-      savePlayerData(); // Save updated game state
-  } else {
-      alert("You have no health potions left!");
-      console.log("No health potions available to use.");
-  }
-}
-
-function startBattle(enemyType) {
-  if (!enemies[enemyType]) {
-      console.error("Invalid enemy type!");
-      return;
-  }
-  currentEnemy = JSON.parse(JSON.stringify(enemies[enemyType])); // Deep clone
-  console.log(`A wild ${currentEnemy.name} appears!`, currentEnemy);
-  showDialogue("combat", `A ${currentEnemy.name} appears, ready to fight!`);
-  updateUI();
-  // Remove autoBattleLoop() from here; let the attack button trigger it
+  }, 2000);
 }
 
 function levelUp() {
   if (gameState.xp >= 100) {
     gameState.level++;
-    console.log("Adding level")
+    console.log("Adding level");
     gameState.xp -= 100;
-    console.log("Removing xp")
+    console.log("Removing xp");
     gameState.hp += 5;
     alert("You leveled up!");
-
     gameState.stats.attack += 1;
     gameState.stats.defense += 1;
     gameState.stats.speed += 1;
     console.log("Updated stats after leveling up:", gameState.stats);
-
     savePlayerData();
     updateUI();
   } else {
@@ -515,15 +468,38 @@ function levelUp() {
   }
 }
 
-document.getElementById("buyPotionsBtn")?.addEventListener("click", () => {
-  handleBuyItem({ name: "Potion", price: 10 });
-});
-
-document.getElementById("useItemBtn")?.addEventListener("click", useItem);
-
+// === 6. Event Listeners ===
 document.addEventListener("DOMContentLoaded", () => {
-  loadPlayerData();  // <- Load data as soon as the game starts
+  loadPlayerData();
   updateUI();
+  const lastMessage = localStorage.getItem("lastActionMessage");
+  const currentPage = window.location.pathname;
+
+  if (lastMessage && currentPage.includes("camp.html")) {
+    showAction(lastMessage);
+  } else if (currentPage.includes("camp.html")) {
+    showAction("You’ve arrived at camp, weary but alive.");
+  } else if (currentPage.includes("ambush.html")) {
+    const enemyTypes = ["bandit", "wolves", "bountyHunter", "trickster", "thief"];
+    const enemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+    const enemyImage = document.getElementById("banditEnemy");
+    const combatContainer = document.getElementById("combat-container");
+    const actionBox = document.getElementById("actionBox");
+    const actionText = document.getElementById("actionText");
+    const buttons = document.querySelector(".buttons");
+    const enemyHPDisplay = document.getElementById("enemyHP");
+
+    startBattle(enemyType);
+    enemyImage.src = enemies[enemyType].image;
+    actionText.textContent = `Ambush! A ${enemies[enemyType].name} attacks!`;
+    enemyHPDisplay.textContent = enemies[enemyType].hp;
+
+    enemyImage.classList.remove("hidden");
+    combatContainer.classList.remove("hidden");
+    actionBox.classList.remove("hidden");
+    buttons.classList.remove("hidden");
+    document.getElementById("campBtn")?.classList.add("hidden");
+  }
 });
 
 document.getElementById("forestBtn")?.addEventListener("click", function () {
@@ -563,16 +539,13 @@ document.getElementById("forestBtn")?.addEventListener("click", function () {
   }
 
   let enemy = enemies[enemyType];
-
   if (!enemy) {
     console.error("Enemy not found!");
     return;
   }
 
   enemyImage.src = enemy.image;
-  actionText.textContent = enemy.dialogue 
-    ? `${enemy.name}: "${enemy.dialogue}"` 
-    : `A ${enemy.name} appears!`;
+  actionText.textContent = enemy.dialogue ? `${enemy.name}: "${enemy.dialogue}"` : `A ${enemy.name} appears!`;
   enemyHPDisplay.textContent = enemy.hp;
 
   enemyImage.classList.remove("hidden");
@@ -580,7 +553,7 @@ document.getElementById("forestBtn")?.addEventListener("click", function () {
   actionBox.classList.remove("hidden");
   buttons.classList.remove("hidden");
   forestBtn.classList.add("hidden");
-  document.getElementById("campBtn").classList.add("hidden");
+  document.getElementById("campBtn")?.classList.add("hidden");
   
   startBattle(enemyType);
 });
@@ -588,48 +561,14 @@ document.getElementById("forestBtn")?.addEventListener("click", function () {
 document.getElementById("campBtn")?.addEventListener("click", () => {
   const randomMessage = campMessages[Math.floor(Math.random() * campMessages.length)];
   showAction(randomMessage);
-  document.getElementById("campBtn").classList.add("hidden");
-  //document.getElementById("forestBtn").classList.remove("hidden");
-  document.querySelector(".buttons").classList.add("hidden");
+  document.getElementById("campBtn")?.classList.add("hidden");
+  document.querySelector(".buttons")?.classList.add("hidden");
   updateUI();
   savePlayerData();
   localStorage.setItem("lastActionMessage", randomMessage);
   setTimeout(() => {
     window.location.href = "camp.html";
   }, 1000);
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  loadPlayerData();
-  updateUI();
-  const lastMessage = localStorage.getItem("lastActionMessage");
-  const currentPage = window.location.pathname;
-
-  if (lastMessage && currentPage.includes("camp.html")) {
-    showAction(lastMessage);
-  } else if (currentPage.includes("camp.html")) {
-    showAction("You’ve arrived at camp, weary but alive.");
-  } else if (currentPage.includes("ambush.html")) {
-    const enemyTypes = ["bandit", "wolves", "bountyHunter"];
-    const enemyType = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
-    const enemyImage = document.getElementById("banditEnemy");
-    const combatContainer = document.getElementById("combat-container");
-    const actionBox = document.getElementById("actionBox");
-    const actionText = document.getElementById("actionText");
-    const buttons = document.querySelector(".buttons");
-    const enemyHPDisplay = document.getElementById("enemyHP");
-
-    startBattle(enemyType);
-    enemyImage.src = enemies[enemyType].image;
-    actionText.textContent = `Ambush! A ${enemies[enemyType].name} attacks!`;
-    enemyHPDisplay.textContent = enemies[enemyType].hp;
-
-    enemyImage.classList.remove("hidden");
-    combatContainer.classList.remove("hidden");
-    actionBox.classList.remove("hidden");
-    buttons.classList.remove("hidden");
-    document.getElementById("campBtn").classList.add("hidden");
-  }
 });
 
 document.getElementById("shortRestBtn")?.addEventListener("click", () => {
@@ -642,24 +581,29 @@ document.getElementById("shortRestBtn")?.addEventListener("click", () => {
     showAction(message);
     savePlayerData();
     updateUI();
-  } else { // 1-5
+  } else {
     message = restOutcomes.ambush[Math.floor(Math.random() * restOutcomes.ambush.length)];
     showAction(message);
     savePlayerData();
     setTimeout(() => {
-      window.location.href = "ambush.html"; // Redirect to new ambush page
+      window.location.href = "ambush.html";
     }, 1000);
   }
 });
 
+document.getElementById("buyPotionsBtn")?.addEventListener("click", () => {
+  handleBuyItem({ name: "Potion", price: 10 });
+});
+
+document.getElementById("useItemBtn")?.addEventListener("click", useItem);
+
 document.getElementById("attackBtn")?.addEventListener("click", startAutoBattle);
-updateUI();
 
 document.getElementById("runAwayBtn")?.addEventListener("click", runAway);
 
-document.getElementById("restartBtn").addEventListener("click", function () {
-  localStorage.clear(); // Clear all saved data
-  window.location.href = "index.html"; // Redirect to the start screen
+document.getElementById("restartBtn")?.addEventListener("click", function () {
+  localStorage.clear();
+  window.location.href = "index.html";
 });
 
-
+updateUI();
