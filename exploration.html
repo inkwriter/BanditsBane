@@ -30,9 +30,7 @@
           <p>Gold: <span id="gold">0</span></p>
           <div class="inventory-dropdown">
             <button class="inventory-button">INV</button>
-            <div class="inventory-list">
-              <p class="item">HP Potions <span id="healthPotions">0</span></p>
-              <p class="item">Poison <span id="poison">0</span></p>
+            <div class="inventory-list" id="inventoryList">
             </div>
           </div>
         </div>
@@ -45,9 +43,10 @@
           <img src="/assets/img_folder/enemies/bandit.jpeg" alt="" id="banditEnemy" class="hidden">
         </div>
       </div>
-      <div id="actionBox"  class="hidde">
+      <div id="actionBox" class="hidden"> 
         <p id="actionText"></p>
       </div>
+      <button id="viewLogBtn">View Log</button>
       <div class="buttons hidden">
           <button id="attackBtn">ATTACK</button>
           <button id="useItemBtn">USE POTION</button>

@@ -14,10 +14,11 @@ const gameState = {
   },
   baseAC: 10,
   gold: 100,
-  inventory: {
-    potions: 0,
-    poison: 0,
-  },
+  inventory: [
+    { name: "potion", quantity: 2 }, // Start with 2 potions
+    { name: "throwingKnife", quantity: 1 } // And 1 knife
+  ],
+  cooldowns: {}, // Added for item cooldowns
   weapon: {
     name: "fist",
     damage: "1d4",
@@ -35,7 +36,8 @@ const enemies = {
     acBonus: 0,
     goldReward: 10,
     xpReward: 20,
-    image: "/assets/img_folder/enemies/bandit.jpeg"
+    image: "/assets/img_folder/enemies/bandit.jpeg",
+    damage: "1d4"
   },
   wolves: {
     name: "Wolves",
@@ -44,7 +46,8 @@ const enemies = {
     acBonus: 1,
     goldReward: 15,
     xpReward: 25,
-    image: "/assets/img_folder/enemies/wolves.jpg"
+    image: "/assets/img_folder/enemies/wolves.jpg",
+    damage: "1d6"
   },
   bountyHunter: {
     name: "Bounty Hunter",
@@ -53,7 +56,8 @@ const enemies = {
     acBonus: 2,
     goldReward: 25,
     xpReward: 40,
-    image: "/assets/img_folder/enemies/bountyHunter.jpg"
+    image: "/assets/img_folder/enemies/bountyHunter.jpg",
+    damage: "1d4"
   },
   trickster: {
     name: "Trickster",
@@ -62,7 +66,8 @@ const enemies = {
     acBonus: 4,
     goldReward: 5,
     xpReward: 70,
-    image: "/assets/img_folder/enemies/trickster.jpg"
+    image: "/assets/img_folder/enemies/trickster.jpg",
+    damage: "1d4"
   },
   thief: {
     name: "Thief",
@@ -71,7 +76,8 @@ const enemies = {
     acBonus: 1,
     goldReward: 150,
     xpReward: 10,
-    image: "/assets/img_folder/enemies/thief.jpg"
+    image: "/assets/img_folder/enemies/thief.jpg",
+    damage: "1d4"
   },
 };
 
@@ -105,9 +111,63 @@ const restOutcomes = {
   ]
 };
 
+const itemEffects = {
+  potion: {
+    use: (user) => {
+      user.hp = Math.min(MAX_HP, user.hp + 10);
+      return `${user.name} uses a potion, restoring 10 HP!`;
+    },
+    cooldown: 0
+  },
+  throwingKnife: {
+    use: (user, target) => {
+      const damage = rollDamage("1d6");
+      target.hp -= damage;
+      return `${user.name} throws a knife, dealing ${damage} damage!`;
+    },
+    cooldown: 3
+  },
+  smokeBomb: {
+    use: (user) => {
+      user.acBonus = (user.acBonus || 0) + 5;
+      setTimeout(() => {
+        user.acBonus = (user.acBonus || 0) - 5;
+        updateUI();
+      }, 4000); // 1 round (assuming 2s turns)
+      return `${user.name} uses a smoke bomb, boosting evasion (+5 AC for 1 round)!`;
+    },
+    cooldown: 3
+  },
+  net: {
+    use: (user, target) => {
+      target.stats.speed = 0;
+      setTimeout(() => {
+        target.stats.speed = target.originalSpeed;
+        updateUI();
+      }, 4000);
+      return `${user.name} throws a net, immobilizing ${target.name} for 1 round!`;
+    },
+    cooldown: 3
+  }
+};
+
 // === 2. Utility Functions ===
+let combatLog = [];
+
 function rollDice(sides) {
   return Math.floor(Math.random() * sides) + 1;
+}
+
+function rollDamage(damageString) {
+  const match = damageString.match(/(\d+)d(\d+)/);
+  if (!match) return rollDice(4);
+  const numDice = parseInt(match[1]);
+  const sides = parseInt(match[2]);
+  let total = 0;
+  for (let i = 0; i < numDice; i++) {
+    total += rollDice(sides);
+  }
+  return total;
 }
 
 function savePlayerData() {
@@ -144,6 +204,60 @@ function calculateAttacks(speed) {
   return 1;
 }
 
+function addToInventory(itemName, amount = 1) {
+  console.log(`Adding ${amount} ${itemName}(s) to inventory...`);
+  const normalizedItemName = itemName.toLowerCase(); // Normalize case
+  const item = gameState.inventory.find(i => i.name === normalizedItemName);
+  if (item) {
+    item.quantity += amount;
+  } else if (itemEffects[normalizedItemName]) {
+    gameState.inventory.push({ name: normalizedItemName, quantity: amount });
+  } else {
+    console.error(`Unknown item: ${normalizedItemName}`);
+    return;
+  }
+  console.log("Inventory updated:", gameState.inventory);
+  updateUI();
+}
+
+function removeFromInventory(itemName, amount = 1) {
+  const normalizedItemName = itemName.toLowerCase();
+  const item = gameState.inventory.find(i => i.name === normalizedItemName);
+  if (item && item.quantity >= amount) {
+    item.quantity -= amount;
+    if (item.quantity === 0) {
+      gameState.inventory = gameState.inventory.filter(i => i.name !== normalizedItemName);
+    }
+    console.log(`Removed ${amount} ${itemName}(s). Inventory now:`, gameState.inventory);
+    return true;
+  }
+  console.log(`Not enough ${itemName} to remove!`);
+  return false;
+}
+
+function useItem(itemName, user, target) {
+  const inventory = user === gameState ? gameState.inventory : user.consumables;
+  const cooldowns = user === gameState ? gameState.cooldowns : user.cooldowns;
+  const normalizedItemName = itemName.toLowerCase();
+  const item = inventory.find(i => i.name === normalizedItemName);
+
+  if (item && item.quantity > 0 && (!cooldowns[normalizedItemName] || cooldowns[normalizedItemName] === 0)) {
+    const effectMessage = itemEffects[normalizedItemName].use(user, target || user); // Default target to user if none
+    removeFromInventory(normalizedItemName);
+    if (itemEffects[normalizedItemName].cooldown > 0) {
+      cooldowns[normalizedItemName] = itemEffects[normalizedItemName].cooldown;
+    }
+    return effectMessage;
+  }
+  return null;
+}
+
+function updateCooldowns(entity) {
+  for (let item in entity.cooldowns) {
+    if (entity.cooldowns[item] > 0) entity.cooldowns[item]--;
+  }
+}
+
 function updateUI() {
   const elements = {
     playerName: document.getElementById("playerName"),
@@ -151,8 +265,7 @@ function updateUI() {
     hp: document.getElementById("hp"),
     level: document.getElementById("level"),
     gold: document.getElementById("gold"),
-    healthPotions: document.getElementById("healthPotions"),
-    poison: document.getElementById("poison"),
+    inventoryList: document.getElementById("inventoryList"),
     att: document.getElementById("att"),
     def: document.getElementById("def"),
     spd: document.getElementById("spd"),
@@ -160,17 +273,31 @@ function updateUI() {
   };
 
   if (elements.playerName) elements.playerName.textContent = gameState.playerName || "Player";
-  if (elements.xp) elements.xp.textContent = `${gameState.xp}/100`;
+  if (elements.xp) elements.xp.textContent = `${gameState.xp}/${LEVEL_UP_XP}`;
   if (elements.hp) elements.hp.textContent = gameState.hp;
   if (elements.level) elements.level.textContent = gameState.level;
   if (elements.gold) elements.gold.textContent = gameState.gold;
-  if (elements.healthPotions) elements.healthPotions.textContent = gameState.inventory.potions;
-  if (elements.poison) elements.poison.textContent = gameState.inventory.poison;
   if (elements.att) elements.att.textContent = gameState.stats.attack;
-  if (elements.def) elements.defContent = gameState.stats.defense;
+  if (elements.def) elements.def.textContent = gameState.stats.defense;
   if (elements.spd) elements.spd.textContent = gameState.stats.speed;
   if (elements.enemyHP) {
     elements.enemyHP.textContent = currentEnemy && currentEnemy.hp > 0 ? currentEnemy.hp : "No enemy";
+  }
+  if (elements.inventoryList) {
+    elements.inventoryList.innerHTML = "";
+    if (gameState.inventory.length === 0) {
+      const p = document.createElement("p");
+      p.className = "item";
+      p.textContent = "Empty";
+      elements.inventoryList.appendChild(p);
+    } else {
+      gameState.inventory.forEach(item => {
+        const p = document.createElement("p");
+        p.className = "item";
+        p.textContent = `${item.name}: ${item.quantity}`;
+        elements.inventoryList.appendChild(p);
+      });
+    }
   }
 }
 
@@ -182,13 +309,6 @@ function checkGameOver() {
 }
 
 // === 3. Inventory and Shop Functions ===
-function addToInventory(itemName) {
-  console.log(`Adding ${itemName} to inventory...`);
-  if (itemName === "Potion") gameState.inventory.potions += 1;
-  if (itemName === "Poison") gameState.inventory.poison += 1;
-  console.log("Inventory updated:", gameState.inventory);
-}
-
 function handleBuyItem(item) {
   if (gameState.gold >= item.price) {
     console.log(`Buying ${item.name}...`);
@@ -230,25 +350,40 @@ function hideShopDialogue() {
 }
 
 function updateShopUI() {
-  document.getElementById("playerName").textContent = gameState.playerName || "Player";
-  document.getElementById("gold").textContent = gameState.gold;
-  document.getElementById("healthPotions").textContent = gameState.inventory.potions;
-  document.getElementById("poison").textContent = gameState.inventory.poison;
+  const playerName = document.getElementById("playerName");
+  const gold = document.getElementById("gold");
+  const inventoryList = document.getElementById("inventoryList");
+  if (playerName) playerName.textContent = gameState.playerName || "Player";
+  if (gold) gold.textContent = gameState.gold;
+  if (inventoryList) {
+    inventoryList.innerHTML = "";
+    if (gameState.inventory.length === 0) {
+      const p = document.createElement("p");
+      p.className = "item";
+      p.textContent = "Empty";
+      inventoryList.appendChild(p);
+    } else {
+      gameState.inventory.forEach(item => {
+        const p = document.createElement("p");
+        p.className = "item";
+        p.textContent = `${item.name}: ${item.quantity}`;
+        inventoryList.appendChild(p);
+      });
+    }
+  }
   console.log("Shop UI updated.");
 }
 
-function useItem() {
-  console.log("Use Item function triggered...");
-  if (gameState.inventory.potions > 0) {
-    gameState.hp = Math.min(100, gameState.hp + 10);
-    gameState.inventory.potions--;
-    showAction("You used a health potion and restored 10 HP!");
-    console.log("Health potion used, HP restored by 10.");
+function playerUseItem(itemName) {
+  if (!battleActive || !currentEnemy) return;
+  const message = useItem(itemName, gameState, currentEnemy);
+  if (message) {
+    showAction(message);
     updateUI();
     savePlayerData();
+    if (currentEnemy.hp <= 0) endBattle(currentEnemy);
   } else {
-    showAction("You have no health potions left!");
-    console.log("No health potions available to use.");
+    showAction(`Can't use ${itemName} yet!`);
   }
 }
 
@@ -257,11 +392,7 @@ const universalDialogueBox = document.getElementById("universalDialogueBox");
 const universalDialogueText = document.getElementById("universalDialogueText");
 
 function updateDialogue(text) {
-  if (universalDialogueText) {
-    universalDialogueText.textContent = text;
-  } else {
-    console.error("Universal dialogue text element not found.");
-  }
+  if (universalDialogueText) universalDialogueText.textContent = text;
 }
 
 function showDialogue(type, text) {
@@ -274,19 +405,19 @@ function showDialogue(type, text) {
 }
 
 function hideDialogue() {
-  if (universalDialogueBox) {
-    universalDialogueBox.classList.add("hidden");
-  }
+  if (universalDialogueBox) universalDialogueBox.classList.add("hidden");
 }
 
+// Fixed duplicate showAction issue
 function showAction(text, append = false) {
   const actionBox = document.getElementById("actionBox");
   const actionText = document.getElementById("actionText");
   if (actionBox && actionText) {
     if (append) {
-      actionText.textContent += `\n${text}`; // Append with newline
+      actionText.textContent += `\n${text}`;
     } else {
-      actionText.textContent = text; // Overwrite
+      actionText.textContent = text;
+      if (battleActive) combatLog.push(text);
     }
     actionBox.classList.remove("hidden");
   } else {
@@ -306,7 +437,8 @@ function startBattle(enemyType) {
   const enemyData = enemies[enemyType];
   currentEnemy = {
     ...enemyData,
-    ac: calculateAC(10, enemyData.stats.speed, enemyData.stats.defense, enemyData.acBonus || 0)
+    ac: calculateAC(10, enemyData.stats.speed, enemyData.stats.defense, enemyData.acBonus || 0),
+    originalSpeed: enemyData.stats.speed // For net reset
   };
   gameState.ac = calculateAC(gameState.baseAC, gameState.stats.speed + gameState.weapon.speed, gameState.stats.defense + gameState.weapon.defense);
   console.log(`A wild ${currentEnemy.name} appears! AC: ${currentEnemy.ac}`, currentEnemy);
@@ -321,6 +453,7 @@ function startBattle(enemyType) {
 function startAutoBattle() {
   if (battleActive || !currentEnemy) return;
   battleActive = true;
+  document.getElementById("attackBtn")?.setAttribute("disabled", "true");
   console.log("Battle started!");
   showAction(`A ${currentEnemy.name} appears, ready to fight!`);
   autoBattleLoop();
@@ -338,6 +471,9 @@ function autoBattleLoop() {
     return;
   }
 
+  const actionText = document.getElementById("actionText");
+  if (actionText) actionText.textContent = "";
+
   setTimeout(() => {
     playerAttack();
     if (currentEnemy && currentEnemy.hp > 0) {
@@ -349,27 +485,41 @@ function autoBattleLoop() {
   }, 1000);
 }
 
-function playerAttack() {
-  const totalSpeed = gameState.stats.speed + gameState.weapon.speed;
-  const numAttacks = calculateAttacks(totalSpeed);
-  console.log(`Player attacks ${numAttacks} time(s) with speed ${totalSpeed}`);
-  
-  let turnSummary = `Your turn (${numAttacks} attacks):`;
-  for (let i = 0; i < numAttacks && currentEnemy.hp > 0; i++) {
-    let attackRoll = rollDice(20) + gameState.stats.attack;
-    console.log(`Player attack ${i + 1}: rolls ${attackRoll} (needs ${currentEnemy.ac} to hit)`);
+function performAttack(attacker, target, isPlayer) {
+  const speed = isPlayer ? gameState.stats.speed + gameState.weapon.speed : attacker.stats.speed;
+  const numAttacks = calculateAttacks(speed);
+  const attackStat = isPlayer ? gameState.stats.attack : attacker.stats.attack;
+  const targetAC = isPlayer ? attacker.ac : gameState.ac;
+  const damageReduction = isPlayer ? 0 : Math.min(2, Math.floor(gameState.stats.defense / 5));
+  const damageFunc = isPlayer ? () => rollDamage(gameState.weapon.damage) : () => rollDamage(attacker.damage || "1d4");
+  const name = isPlayer ? "You" : attacker.name;
+  const targetName = isPlayer ? attacker.name : "you";
 
-    if (attackRoll >= currentEnemy.ac) {
-      let damage = rollDice(6);
-      currentEnemy.hp -= damage;
-      turnSummary += `\nAttack ${i + 1}: Hit ${currentEnemy.name} for ${damage} damage!`;
-      console.log(`Hit! Dealt ${damage} damage. ${currentEnemy.name} now has ${currentEnemy.hp} HP left.`);
+  console.log(`${name} attacks ${numAttacks} time(s) with speed ${speed}`);
+  let turnSummary = `${name}'s turn (${numAttacks} attacks):`;
 
-      if (currentEnemy.hp <= 0) {
-        console.log(`Enemy ${currentEnemy.name} defeated!`);
+  for (let i = 0; i < numAttacks && (isPlayer ? attacker.hp > 0 : gameState.hp > 0); i++) {
+    let attackRoll = rollDice(20) + attackStat;
+    console.log(`${name} attack ${i + 1}: rolls ${attackRoll} (needs ${targetAC} to hit)`);
+
+    if (attackRoll >= targetAC) {
+      let baseDamage = damageFunc();
+      let damage = Math.max(1, baseDamage - damageReduction);
+      if (isPlayer) attacker.hp -= damage; else gameState.hp -= damage;
+      turnSummary += `\nAttack ${i + 1}: Hit ${targetName} for ${damage} damage${damageReduction > 0 ? ` (-${damageReduction})` : ""}!`;
+      console.log(`Hit! Dealt ${damage} damage. ${targetName} now has ${isPlayer ? attacker.hp : gameState.hp} HP left.`);
+
+      if (isPlayer && attacker.hp <= 0) {
+        console.log(`Enemy ${attacker.name} defeated!`);
         showAction(turnSummary);
-        endBattle(currentEnemy);
-        return;
+        endBattle(attacker);
+        return false;
+      } else if (!isPlayer && gameState.hp <= 0) {
+        console.log("Player defeated!");
+        turnSummary += "\nYou have been defeated!";
+        showAction(turnSummary);
+        gameOver();
+        return false;
       }
     } else {
       turnSummary += `\nAttack ${i + 1}: Missed!`;
@@ -378,56 +528,33 @@ function playerAttack() {
   }
 
   showAction(turnSummary);
+  updateCooldowns(isPlayer ? gameState : attacker); // Update cooldowns after turn
+  return true;
+}
+
+function playerAttack() {
+  performAttack(currentEnemy, null, true);
   updateUI();
   savePlayerData();
 }
 
 function enemyAttack() {
   if (!battleActive) return;
-
-  const numAttacks = calculateAttacks(currentEnemy.stats.speed);
-  console.log(`${currentEnemy.name} attacks ${numAttacks} time(s) with speed ${currentEnemy.stats.speed}`);
-  
-  let turnSummary = `${currentEnemy.name}'s turn (${numAttacks} attacks):`;
-  for (let i = 0; i < numAttacks && gameState.hp > 0; i++) {
-    let attackRoll = rollDice(20) + currentEnemy.stats.attack;
-    console.log(`${currentEnemy.name} attack ${i + 1}: rolls ${attackRoll} (needs ${gameState.ac} to hit)`);
-
-    if (attackRoll >= gameState.ac) {
-      let damage = rollDice(4);
-      gameState.hp -= damage;
-      turnSummary += `\nAttack ${i + 1}: Hit you for ${damage} damage!`;
-      console.log(`${currentEnemy.name} hits! You take ${damage} damage. You now have ${gameState.hp} HP left.`);
-
-      if (gameState.hp <= 0) {
-        console.log("Player defeated!");
-        turnSummary += "\nYou have been defeated!";
-        showAction(turnSummary);
-        gameOver();
-        return;
-      }
-    } else {
-      turnSummary += `\nAttack ${i + 1}: Missed!`;
-      console.log(`${currentEnemy.name} missed!`);
-    }
-  }
-
-  showAction(turnSummary);
+  performAttack(currentEnemy, null, false);
   updateUI();
   savePlayerData();
 }
 
 function endBattle(enemy) {
   battleActive = false;
+  document.getElementById("attackBtn")?.removeAttribute("disabled");
   gameState.gold += enemy.goldReward;
   gameState.xp += enemy.xpReward;
   console.log(`Battle won! +${enemy.goldReward} Gold, +${enemy.xpReward} XP`);
   showAction(`You defeated the ${enemy.name}! +${enemy.goldReward} Gold, +${enemy.xpReward} XP`);
-  
   levelUp();
   savePlayerData();
   updateUI();
-
   document.getElementById("combat-container")?.classList.add("hidden");
   document.querySelector(".buttons")?.classList.add("hidden");
   document.getElementById("campBtn")?.classList.remove("hidden");
@@ -439,25 +566,20 @@ function runAway() {
     console.log("No active battle to run from!");
     return;
   }
-
   const damage = rollDice(4);
   gameState.hp -= damage;
   console.log(`You flee, taking ${damage} damage. HP now: ${gameState.hp}`);
   showAction(`You flee from the ${currentEnemy.name}, taking ${damage} damage in your escape!`);
-
   updateUI();
   savePlayerData();
-
   if (gameState.hp <= 0) {
     gameOver();
     return;
   }
-
   battleActive = false;
   currentEnemy = null;
   document.getElementById("combat-container")?.classList.add("hidden");
   document.querySelector(".buttons")?.classList.add("hidden");
-
   setTimeout(() => {
     window.location.href = "camp.html";
   }, 1500);
@@ -465,19 +587,24 @@ function runAway() {
 
 function gameOver() {
   battleActive = false;
+  document.getElementById("attackBtn")?.removeAttribute("disabled");
   showAction("You have been defeated!");
   setTimeout(() => {
     window.location.href = "gameover.html";
   }, 2000);
 }
 
+const LEVEL_UP_XP = 100;
+const LEVEL_UP_HP_GAIN = 5;
+const MAX_HP = 100;
+
 function levelUp() {
-  if (gameState.xp >= 100) {
+  if (gameState.xp >= LEVEL_UP_XP) {
     gameState.level++;
     console.log("Adding level");
-    gameState.xp -= 100;
+    gameState.xp -= LEVEL_UP_XP;
     console.log("Removing xp");
-    gameState.hp += 5;
+    gameState.hp = Math.min(MAX_HP, gameState.hp + LEVEL_UP_HP_GAIN);
     alert("You leveled up!");
     gameState.stats.attack += 1;
     gameState.stats.defense += 1;
@@ -512,14 +639,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const enemyHPDisplay = document.getElementById("enemyHP");
 
     startBattle(enemyType);
-    enemyImage.src = enemies[enemyType].image;
-    actionText.textContent = `Ambush! A ${enemies[enemyType].name} attacks!`;
-    enemyHPDisplay.textContent = enemies[enemyType].hp;
+    if (enemyImage) enemyImage.src = enemies[enemyType].image;
+    if (actionText) actionText.textContent = `Ambush! A ${enemies[enemyType].name} attacks!`;
+    if (enemyHPDisplay) enemyHPDisplay.textContent = enemies[enemyType].hp;
 
-    enemyImage.classList.remove("hidden");
-    combatContainer.classList.remove("hidden");
-    actionBox.classList.remove("hidden");
-    buttons.classList.remove("hidden");
+    enemyImage?.classList.remove("hidden");
+    combatContainer?.classList.remove("hidden");
+    actionBox?.classList.remove("hidden");
+    buttons?.classList.remove("hidden");
     document.getElementById("campBtn")?.classList.add("hidden");
   }
 });
@@ -544,18 +671,12 @@ document.getElementById("forestBtn")?.addEventListener("click", function () {
   const enemyHPDisplay = document.getElementById("enemyHP");
 
   let enemyType;
-
-  if (roll >= 1 && roll <= 10) {
-    enemyType = "bandit";
-  } else if (roll === 11) {
-    enemyType = "thief";
-  } else if (roll === 12) {
-    enemyType = "trickster";
-  } else if (roll >= 13 && roll <= 16) {
-    enemyType = "wolves";
-  } else if (roll >= 17 && roll <= 20) {
-    enemyType = "bountyHunter";
-  } else {
+  if (roll >= 1 && roll <= 10) enemyType = "bandit";
+  else if (roll === 11) enemyType = "thief";
+  else if (roll === 12) enemyType = "trickster";
+  else if (roll >= 13 && roll <= 16) enemyType = "wolves";
+  else if (roll >= 17 && roll <= 20) enemyType = "bountyHunter";
+  else {
     console.error("Invalid roll value:", roll);
     return;
   }
@@ -566,15 +687,15 @@ document.getElementById("forestBtn")?.addEventListener("click", function () {
     return;
   }
 
-  enemyImage.src = enemy.image;
-  actionText.textContent = enemy.dialogue ? `${enemy.name}: "${enemy.dialogue}"` : `A ${enemy.name} appears!`;
-  enemyHPDisplay.textContent = enemy.hp;
+  if (enemyImage) enemyImage.src = enemy.image;
+  if (actionText) actionText.textContent = enemy.dialogue ? `${enemy.name}: "${enemy.dialogue}"` : `A ${enemy.name} appears!`;
+  if (enemyHPDisplay) enemyHPDisplay.textContent = enemy.hp;
 
-  enemyImage.classList.remove("hidden");
-  combatContainer.classList.remove("hidden");
-  actionBox.classList.remove("hidden");
-  buttons.classList.remove("hidden");
-  forestBtn.classList.add("hidden");
+  enemyImage?.classList.remove("hidden");
+  combatContainer?.classList.remove("hidden");
+  actionBox?.classList.remove("hidden");
+  buttons?.classList.remove("hidden");
+  forestBtn?.classList.add("hidden");
   document.getElementById("campBtn")?.classList.add("hidden");
   
   startBattle(enemyType);
@@ -596,10 +717,9 @@ document.getElementById("campBtn")?.addEventListener("click", () => {
 document.getElementById("shortRestBtn")?.addEventListener("click", () => {
   const roll = rollDice(20);
   let message;
-
   if (roll >= 6 && roll <= 20) {
     message = restOutcomes.safe[Math.floor(Math.random() * restOutcomes.safe.length)];
-    gameState.hp = Math.min(100, gameState.hp + 5);
+    gameState.hp = Math.min(MAX_HP, gameState.hp + 5);
     showAction(message);
     savePlayerData();
     updateUI();
@@ -614,18 +734,22 @@ document.getElementById("shortRestBtn")?.addEventListener("click", () => {
 });
 
 document.getElementById("buyPotionsBtn")?.addEventListener("click", () => {
-  handleBuyItem({ name: "Potion", price: 10 });
+  handleBuyItem({ name: "potion", price: 10 }); // Normalized to "potion"
 });
 
-document.getElementById("useItemBtn")?.addEventListener("click", useItem);
+document.getElementById("useItemBtn")?.addEventListener("click", () => playerUseItem("potion"));
 
 document.getElementById("attackBtn")?.addEventListener("click", startAutoBattle);
 
 document.getElementById("runAwayBtn")?.addEventListener("click", runAway);
 
-document.getElementById("restartBtn")?.addEventListener("click", function () {
+document.getElementById("restartBtn")?.addEventListener("click", () => {
   localStorage.clear();
   window.location.href = "index.html";
+});
+
+document.getElementById("viewLogBtn")?.addEventListener("click", () => {
+  showAction(combatLog.join("\n\n"), false);
 });
 
 updateUI();
