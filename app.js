@@ -2,20 +2,28 @@
 console.log("Game script loaded.");
 
 const gameState = {
-  playerName: "Xander",
+  playerName: "Xander Oakenshield",
   xp: 0,
   hp: 20,
+  maxHp: 20,
   level: 1,
   stats: {
     attack: 3,
     defense: 1,
     speed: 2,
   },
-  ac: 12,
+  baseAC: 12,
   gold: 100,
   inventory: {
     potions: 0,
     poison: 0,
+  },
+  weapon: {
+    name: "fist",
+    damage: "1d4",
+    attack: 0,
+    defense: 0,
+    speed: 0
   },
 };
 
@@ -23,8 +31,7 @@ const enemies = {
   bandit: {
     name: "Bandit",
     hp: 10,
-    ac: 10,
-    attack: 2,
+    stats: {attack: 2, speed: 3, defense: 2},
     goldReward: 10,
     xpReward: 20,
     image: "/assets/img_folder/enemies/bandit.jpeg"
@@ -32,8 +39,7 @@ const enemies = {
   wolves: {
     name: "Wolves",
     hp: 15,
-    ac: 12,
-    attack: 3,
+    stats: {attack: 3, speed: 8, defense: 4},
     goldReward: 15,
     xpReward: 25,
     image: "/assets/img_folder/enemies/wolves.jpg"
@@ -41,8 +47,7 @@ const enemies = {
   bountyHunter: {
     name: "Bounty Hunter",
     hp: 20,
-    ac: 14,
-    attack: 4,
+    stats: {attack: 4, speed: 5, defense: 10},
     goldReward: 25,
     xpReward: 40,
     image: "/assets/img_folder/enemies/bountyHunter.jpg"
@@ -50,8 +55,7 @@ const enemies = {
   trickster: {
     name: "Trickster",
     hp: 1,
-    ac: 18,
-    attack: 8,
+    stats: {attack: 8, speed: 15, defense: 5},
     goldReward: 5,
     xpReward: 70,
     image: "/assets/img_folder/enemies/trickster.jpg"
@@ -59,8 +63,7 @@ const enemies = {
   thief: {
     name: "Thief",
     hp: 15,
-    ac: 15,
-    attack: 6,
+    stats: {attack: 6, speed: 10, defense: 8},
     goldReward: 150,
     xpReward: 10,
     image: "/assets/img_folder/enemies/thief.jpg"
@@ -204,6 +207,21 @@ function loadPlayerData() {
   }
 }
 
+function calculateAC(baseAC, speed, defense) {
+  return baseAC + Math.min(2, Math.floor(speed / 5)) + Math.min(2, Math.floor(defense / 5));
+}
+
+function calculateAttacks(speed) {
+  if (speed >= 20) return 5;
+  if (speed >= 15) return 4;
+  if (speed >= 10) return 3;
+  if (speed >= 5) return 2;
+  return 1;
+}
+
+function calculateAC(baseAC, speed, defense) {
+  return baseAC + Math.min(2, Math.floor(speed / 5)) + Math.min(2, Math.floor(defense / 5));
+}
 
 // === 3. Inventory Management ===
 function addToInventory(itemName) {
