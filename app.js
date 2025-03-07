@@ -15,10 +15,10 @@ const gameState = {
   baseAC: 10,
   gold: 100,
   inventory: [
-    { name: "potion", quantity: 2 }, // Start with 2 potions
-    { name: "throwingKnife", quantity: 1 } // And 1 knife
+    { name: "potion", quantity: 2 },
+    { name: "throwingKnife", quantity: 1 }
   ],
-  cooldowns: {}, // Added for item cooldowns
+  cooldowns: {},
   weapon: {
     name: "fist",
     damage: "1d4",
@@ -133,7 +133,7 @@ const itemEffects = {
       setTimeout(() => {
         user.acBonus = (user.acBonus || 0) - 5;
         updateUI();
-      }, 4000); // 1 round (assuming 2s turns)
+      }, 4000);
       return `${user.name} uses a smoke bomb, boosting evasion (+5 AC for 1 round)!`;
     },
     cooldown: 3
@@ -206,7 +206,7 @@ function calculateAttacks(speed) {
 
 function addToInventory(itemName, amount = 1) {
   console.log(`Adding ${amount} ${itemName}(s) to inventory...`);
-  const normalizedItemName = itemName.toLowerCase(); // Normalize case
+  const normalizedItemName = itemName.toLowerCase();
   const item = gameState.inventory.find(i => i.name === normalizedItemName);
   if (item) {
     item.quantity += amount;
@@ -242,7 +242,7 @@ function useItem(itemName, user, target) {
   const item = inventory.find(i => i.name === normalizedItemName);
 
   if (item && item.quantity > 0 && (!cooldowns[normalizedItemName] || cooldowns[normalizedItemName] === 0)) {
-    const effectMessage = itemEffects[normalizedItemName].use(user, target || user); // Default target to user if none
+    const effectMessage = itemEffects[normalizedItemName].use(user, target || user);
     removeFromInventory(normalizedItemName);
     if (itemEffects[normalizedItemName].cooldown > 0) {
       cooldowns[normalizedItemName] = itemEffects[normalizedItemName].cooldown;
@@ -270,6 +270,10 @@ function updateUI() {
     def: document.getElementById("def"),
     spd: document.getElementById("spd"),
     enemyHP: document.getElementById("enemyHP"),
+    usePotionBtn: document.getElementById("usePotionBtn"),
+    useThrowingKnifeBtn: document.getElementById("useThrowingKnifeBtn"),
+    useSmokeBombBtn: document.getElementById("useSmokeBombBtn"),
+    useNetBtn: document.getElementById("useNetBtn"),
   };
 
   if (elements.playerName) elements.playerName.textContent = gameState.playerName || "Player";
@@ -299,6 +303,25 @@ function updateUI() {
       });
     }
   }
+
+  // Update button states
+  const buttons = {
+    potion: elements.usePotionBtn,
+    throwingKnife: elements.useThrowingKnifeBtn,
+    smokeBomb: elements.useSmokeBombBtn,
+    net: elements.useNetBtn
+  };
+  Object.keys(buttons).forEach(itemName => {
+    if (buttons[itemName]) {
+      const item = gameState.inventory.find(i => i.name === itemName);
+      const onCooldown = gameState.cooldowns[itemName] > 0;
+      if (!item || item.quantity === 0 || onCooldown) {
+        buttons[itemName].setAttribute("disabled", "true");
+      } else {
+        buttons[itemName].removeAttribute("disabled");
+      }
+    }
+  });
 }
 
 function checkGameOver() {
@@ -375,13 +398,20 @@ function updateShopUI() {
 }
 
 function playerUseItem(itemName) {
-  if (!battleActive || !currentEnemy) return;
+  if (!battleActive || !currentEnemy) {
+    showAction("No battle active to use an item!");
+    return;
+  }
   const message = useItem(itemName, gameState, currentEnemy);
   if (message) {
     showAction(message);
     updateUI();
     savePlayerData();
-    if (currentEnemy.hp <= 0) endBattle(currentEnemy);
+    if (currentEnemy.hp <= 0) {
+      endBattle(currentEnemy);
+    } else {
+      setTimeout(enemyAttack, 1000); // Enemy responds after item use
+    }
   } else {
     showAction(`Can't use ${itemName} yet!`);
   }
@@ -408,7 +438,6 @@ function hideDialogue() {
   if (universalDialogueBox) universalDialogueBox.classList.add("hidden");
 }
 
-// Fixed duplicate showAction issue
 function showAction(text, append = false) {
   const actionBox = document.getElementById("actionBox");
   const actionText = document.getElementById("actionText");
@@ -438,7 +467,7 @@ function startBattle(enemyType) {
   currentEnemy = {
     ...enemyData,
     ac: calculateAC(10, enemyData.stats.speed, enemyData.stats.defense, enemyData.acBonus || 0),
-    originalSpeed: enemyData.stats.speed // For net reset
+    originalSpeed: enemyData.stats.speed
   };
   gameState.ac = calculateAC(gameState.baseAC, gameState.stats.speed + gameState.weapon.speed, gameState.stats.defense + gameState.weapon.defense);
   console.log(`A wild ${currentEnemy.name} appears! AC: ${currentEnemy.ac}`, currentEnemy);
@@ -528,7 +557,7 @@ function performAttack(attacker, target, isPlayer) {
   }
 
   showAction(turnSummary);
-  updateCooldowns(isPlayer ? gameState : attacker); // Update cooldowns after turn
+  updateCooldowns(isPlayer ? gameState : attacker);
   return true;
 }
 
@@ -734,10 +763,13 @@ document.getElementById("shortRestBtn")?.addEventListener("click", () => {
 });
 
 document.getElementById("buyPotionsBtn")?.addEventListener("click", () => {
-  handleBuyItem({ name: "potion", price: 10 }); // Normalized to "potion"
+  handleBuyItem({ name: "potion", price: 10 });
 });
 
-document.getElementById("useItemBtn")?.addEventListener("click", () => playerUseItem("potion"));
+document.getElementById("usePotionBtn")?.addEventListener("click", () => playerUseItem("potion"));
+document.getElementById("useThrowingKnifeBtn")?.addEventListener("click", () => playerUseItem("throwingKnife"));
+document.getElementById("useSmokeBombBtn")?.addEventListener("click", () => playerUseItem("smokeBomb"));
+document.getElementById("useNetBtn")?.addEventListener("click", () => playerUseItem("net"));
 
 document.getElementById("attackBtn")?.addEventListener("click", startAutoBattle);
 
