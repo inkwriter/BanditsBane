@@ -167,7 +167,7 @@ function updateUI() {
   if (elements.healthPotions) elements.healthPotions.textContent = gameState.inventory.potions;
   if (elements.poison) elements.poison.textContent = gameState.inventory.poison;
   if (elements.att) elements.att.textContent = gameState.stats.attack;
-  if (elements.def) elements.def.textContent = gameState.stats.defense;
+  if (elements.def) elements.defContent = gameState.stats.defense;
   if (elements.spd) elements.spd.textContent = gameState.stats.speed;
   if (elements.enemyHP) {
     elements.enemyHP.textContent = currentEnemy && currentEnemy.hp > 0 ? currentEnemy.hp : "No enemy";
@@ -242,11 +242,12 @@ function useItem() {
   if (gameState.inventory.potions > 0) {
     gameState.hp = Math.min(100, gameState.hp + 10);
     gameState.inventory.potions--;
-    alert("You used a health potion and restored 10 HP!");
-    updateUI(); // Changed from updateCombatUI (undefined)
+    showAction("You used a health potion and restored 10 HP!");
+    console.log("Health potion used, HP restored by 10.");
+    updateUI();
     savePlayerData();
   } else {
-    alert("You have no health potions left!");
+    showAction("You have no health potions left!");
     console.log("No health potions available to use.");
   }
 }
@@ -278,11 +279,15 @@ function hideDialogue() {
   }
 }
 
-function showAction(text) {
+function showAction(text, append = false) {
   const actionBox = document.getElementById("actionBox");
   const actionText = document.getElementById("actionText");
   if (actionBox && actionText) {
-    actionText.textContent = text;
+    if (append) {
+      actionText.textContent += `\n${text}`; // Append with newline
+    } else {
+      actionText.textContent = text; // Overwrite
+    }
     actionBox.classList.remove("hidden");
   } else {
     console.error("Action box not found!");
@@ -345,25 +350,34 @@ function autoBattleLoop() {
 }
 
 function playerAttack() {
-  let attackRoll = rollDice(20) + gameState.stats.attack;
-  console.log(`Player rolls: ${attackRoll} (needs ${currentEnemy.ac} to hit)`);
+  const totalSpeed = gameState.stats.speed + gameState.weapon.speed;
+  const numAttacks = calculateAttacks(totalSpeed);
+  console.log(`Player attacks ${numAttacks} time(s) with speed ${totalSpeed}`);
+  
+  let turnSummary = `Your turn (${numAttacks} attacks):`;
+  for (let i = 0; i < numAttacks && currentEnemy.hp > 0; i++) {
+    let attackRoll = rollDice(20) + gameState.stats.attack;
+    console.log(`Player attack ${i + 1}: rolls ${attackRoll} (needs ${currentEnemy.ac} to hit)`);
 
-  if (attackRoll >= currentEnemy.ac) {
-    let damage = rollDice(6);
-    currentEnemy.hp -= damage;
-    showAction(`You hit the ${currentEnemy.name} for ${damage} damage!`);
-    console.log(`Hit! Dealt ${damage} damage. ${currentEnemy.name} now has ${currentEnemy.hp} HP left.`);
+    if (attackRoll >= currentEnemy.ac) {
+      let damage = rollDice(6);
+      currentEnemy.hp -= damage;
+      turnSummary += `\nAttack ${i + 1}: Hit ${currentEnemy.name} for ${damage} damage!`;
+      console.log(`Hit! Dealt ${damage} damage. ${currentEnemy.name} now has ${currentEnemy.hp} HP left.`);
 
-    if (currentEnemy.hp <= 0) {
-      console.log(`Enemy ${currentEnemy.name} defeated!`);
-      endBattle(currentEnemy);
-      return;
+      if (currentEnemy.hp <= 0) {
+        console.log(`Enemy ${currentEnemy.name} defeated!`);
+        showAction(turnSummary);
+        endBattle(currentEnemy);
+        return;
+      }
+    } else {
+      turnSummary += `\nAttack ${i + 1}: Missed!`;
+      console.log("Miss!");
     }
-  } else {
-    showAction("You missed the attack!");
-    console.log("Miss!");
   }
 
+  showAction(turnSummary);
   updateUI();
   savePlayerData();
 }
@@ -371,26 +385,34 @@ function playerAttack() {
 function enemyAttack() {
   if (!battleActive) return;
 
-  let attackRoll = rollDice(20) + currentEnemy.stats.attack;
-  console.log(`${currentEnemy.name} rolls: ${attackRoll} (needs ${gameState.ac} to hit)`);
+  const numAttacks = calculateAttacks(currentEnemy.stats.speed);
+  console.log(`${currentEnemy.name} attacks ${numAttacks} time(s) with speed ${currentEnemy.stats.speed}`);
+  
+  let turnSummary = `${currentEnemy.name}'s turn (${numAttacks} attacks):`;
+  for (let i = 0; i < numAttacks && gameState.hp > 0; i++) {
+    let attackRoll = rollDice(20) + currentEnemy.stats.attack;
+    console.log(`${currentEnemy.name} attack ${i + 1}: rolls ${attackRoll} (needs ${gameState.ac} to hit)`);
 
-  if (attackRoll >= gameState.ac) {
-    let damage = rollDice(4);
-    gameState.hp -= damage;
-    console.log(`${currentEnemy.name} hits! You take ${damage} damage. You now have ${gameState.hp} HP left.`);
-    showAction(`The ${currentEnemy.name} strikes you for ${damage} damage!`);
+    if (attackRoll >= gameState.ac) {
+      let damage = rollDice(4);
+      gameState.hp -= damage;
+      turnSummary += `\nAttack ${i + 1}: Hit you for ${damage} damage!`;
+      console.log(`${currentEnemy.name} hits! You take ${damage} damage. You now have ${gameState.hp} HP left.`);
 
-    if (gameState.hp <= 0) {
-      console.log("Player defeated!");
-      showAction("You have been defeated!");
-      gameOver();
-      return;
+      if (gameState.hp <= 0) {
+        console.log("Player defeated!");
+        turnSummary += "\nYou have been defeated!";
+        showAction(turnSummary);
+        gameOver();
+        return;
+      }
+    } else {
+      turnSummary += `\nAttack ${i + 1}: Missed!`;
+      console.log(`${currentEnemy.name} missed!`);
     }
-  } else {
-    console.log(`${currentEnemy.name} missed!`);
-    showAction(`The ${currentEnemy.name}'s attack misses!`);
   }
 
+  showAction(turnSummary);
   updateUI();
   savePlayerData();
 }
