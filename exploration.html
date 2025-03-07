@@ -16,6 +16,9 @@
           <span id="playerName"></span>
           <p>XP: <span id="xp">0/100</span></p>
           <p>HP: <span id="hp">100</span></p>
+          <div class="health-bar-container">
+            <div class="health-bar" id="player-health"></div>
+          </div>
           <div class="stats-dropdown">
             <button class="stats-btn">STATS</button>
             <div class="stats-list">
@@ -38,6 +41,9 @@
       <div class="combat-container hidden" id="combat-container">
         <div class="enemyHP">
           <p>Enemy HP: <span id="enemyHP">20</span></p>
+          <div class="health-bar-container">
+            <div class="health-bar" id="enemy-health"></div>
+          </div>
         </div>
         <div>
           <img src="/assets/img_folder/enemies/bandit.jpeg" alt="" id="banditEnemy" class="hidden">
@@ -57,8 +63,10 @@
             <button id="runAwayBtn">RUN AWAY</button>
           </a>
       </div>
-      <button id="forestBtn" class="forestBtn">Forest</button>
-      <button id="campBtn" class="hidden">Return to Camp</button>
+      <div class="afterCombatBtns">
+        <button id="forestBtn" class="forestBtn">Forest</button>
+        <button id="campBtn" class="hidden">Return to Camp</button>
+      </div>
     </div>
     <script src="/app.js"></script>
   </body>

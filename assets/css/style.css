@@ -16,28 +16,23 @@ p {
 #actionBox {
     background-color: black;
     color: white;
-    font-family: 'Courier New', monospace; /* Mimics old PC text */
-    border: 2px solid #ccc; /* Optional: a light gray border for that pixel feel */
-    padding: 10px;
-    margin: 10px 0; /* Space it between image and buttons */
-    max-width: 80%; /* Keep it compact */
-    min-height: 40px; /* Ensure it’s visible even when empty */
-    text-align: left; /* Left-aligned like old game text */
+    font-family: 'Courier New', monospace;
     border: 2px solid #ccc;
-  }
-  
-  #actionBox.hidden {
-    display: none;
-  }
+    padding: 10px;
+    margin: 10px 0;
+    max-width: 80%;
+    width: 80%; /* Fixed width */
+    height: 100px; /* Fixed height */
+    overflow-y: auto; /* Scroll if content exceeds height */
+    text-align: left;
+}
 
-  
-  .buttons {
-    display: flex;
-    gap: 10px;
-  }
+#actionBox.hidden {
+    display: none;
+}
 
 body {
-    background-color:  #1b4332;;
+    background-color: #1b4332;
     color: #e9ffdb;
     font-family: 'Open Sans', sans-serif;
     margin: 0;
@@ -45,7 +40,7 @@ body {
     justify-content: center;
     align-items: center;
     padding: 20px;
-    min-height: 100vhpx;
+    min-height: 100vh;
 }
 
 h1, h2 {
@@ -56,43 +51,47 @@ h1, h2 {
 main {
     display: flex;
     flex-direction: column;
-    align-items: center; 
+    align-items: center;
     justify-content: space-between;
 }
 
 button {
-    background-color: #4f372d;;
+    background-color: #4f372d;
     color: #ffd670;
     border: 1px solid #ffd670;
     height: 60px;
-    width: 100px;
+    width: 85px;
     border-radius: 5px;
-    padding: 10px 20px;
+    padding: 10px 10px;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .buttons {
     display: flex;
+    flex-direction: row; /* Explicitly horizontal, even after combat */
+    flex-wrap: wrap; /* Wraps to next line if needed */
     justify-content: center;
     gap: 20px;
     margin-top: 20px;
+    width: 100%;
+    max-width: 100%;
 }
 
 button:hover {
     background-color: #7f5539;
     color: #e9ffdb;
-    transform: scale(1.05); 
+    transform: scale(1.05);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 .choice-buttons button:disabled {
-    background-color: #2E3B4E; 
-    color: #AAAAAA; 
+    background-color: #2E3B4E;
+    color: #AAAAAA;
     border: 1px solid #555555;
-    cursor: not-allowed; 
-    opacity: 0.7; 
-    transition: none; 
+    cursor: not-allowed;
+    opacity: 0.7;
+    transition: none;
 }
 
 a button {
@@ -108,7 +107,7 @@ a button {
 
 .shopItems button {
     height: 40px;
-    width: 60;
+    width: 60px;
     border-radius: 25%;
     margin-top: 10px;
 }
@@ -120,9 +119,8 @@ a button {
     width: 100%;
     max-width: 500px;
     background-color: #2d6a4f;
-    color:  #d9f99d;
+    color: #d9f99d;
     padding: 20px;
-    /* border: 2px solid #3D5A80; */
     border-radius: 10px;
 }
 
@@ -160,7 +158,7 @@ a button {
     display: none;
     position: absolute;
     background-color: #283618;
-    color: #d9f99d; 
+    color: #d9f99d;
     border: 1px solid #d9f99d;
     padding: 10px;
     z-index: 1;
@@ -171,7 +169,7 @@ a button {
 }
 
 .inventory-button {
-    background-color: #283618; 
+    background-color: #283618;
     color: #d9f99d;
     border: 1px solid #d9f99d;
     padding: 5px;
@@ -289,17 +287,17 @@ a button {
     display: flex;
 }
 
-#combat-feeback-box {
+#combat-feedback-box {
     margin-top: 10px;
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
-    background-color: #f9f9f9;
+    background-color: black;
     max-width: 300px;
     text-align: left;
 }
 
-#comabt-feedback-box div {
+#combat-feedback-box div {
     margin: 5px 0;
     font-size: 14px;
 }
@@ -312,7 +310,7 @@ a button {
 }
 
 .inventory-list p.item,
-stats-list p {
+.stats-list p {
     color: #d9f99d;
 }
 
@@ -330,7 +328,7 @@ stats-list p {
     flex-wrap: wrap;
     justify-content: center;
     gap: 20px;
-    margin: 20px 0; 
+    margin: 20px 0;
 }
 
 .choice-buttons h3 {
@@ -398,7 +396,7 @@ stats-list p {
 
 #shopDialogueBox {
     position: absolute;
-    top: 32%; 
+    top: 32%;
     left: 50%;
     transform: translate(-50%, -50%);
     background-color: rgba(0, 0, 0, 0.8);
@@ -428,7 +426,7 @@ stats-list p {
     text-align: left;
 }
 
-#comabt-feedback-box div {
+#combat-feedback-box div {
     margin: 5px 0;
     font-size: 14px;
 }
@@ -444,13 +442,12 @@ stats-list p {
 }
 
 #poisonBtn {
-        background-color: #2E3B4E;
-        color: #AAAAAA; 
-        border: 1px solid #555555; 
-        cursor: not-allowed; 
-        opacity: 0.7;
-        transition: none;
-    
+    background-color: #2E3B4E;
+    color: #AAAAAA;
+    border: 1px solid #555555;
+    cursor: not-allowed;
+    opacity: 0.7;
+    transition: none;
 }
 
 .item {
@@ -509,6 +506,12 @@ stats-list p {
 
 #gameOverScreen button:hover {
     background: darkred;
+}
+
+#afterCombatBtns {
+    display: flex;
+    justify-content: center;
+    flex-direction: row;
 }
 
 /* For tablets and medium-sized devices (768px and up) */
@@ -595,7 +598,7 @@ stats-list p {
     .stats-btn, .inventory-button {
         height: 40px;
         width: 80px;
-        font: 20px;
+        font-size: 20px;
     }
 
     #backToTheWild {

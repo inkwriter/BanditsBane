@@ -511,6 +511,23 @@ function levelUp() {
   updateUI();
 }
 
+function updateHealthBar(elementId, currentHealth, maxHealth) {
+  const healthBar = document.getElementById(elementId);
+  let healthPercentage = (currentHealth / maxHealth) * 100;
+  
+  // Set width
+  healthBar.style.width = healthPercentage + "%";
+
+  // Change color based on health
+  if (healthPercentage > 50) {
+      healthBar.style.backgroundColor = "green";
+  } else if (healthPercentage > 20) {
+      healthBar.style.backgroundColor = "yellow";
+  } else {
+      healthBar.style.backgroundColor = "red";
+  }
+}
+
 // === 6. Event Listeners ===
 document.addEventListener("DOMContentLoaded", () => {
   loadPlayerData();
