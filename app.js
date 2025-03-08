@@ -115,6 +115,14 @@ function loadPlayerData() {
   try {
     if (savedData) {
       Object.assign(gameState, JSON.parse(savedData));
+      // Ensure inventory is an array
+      if (!Array.isArray(gameState.inventory)) {
+        console.warn("Loaded inventory is not an array, resetting to default:", gameState.inventory);
+        gameState.inventory = [
+          { name: "potion", quantity: 2 },
+          { name: "throwingknife", quantity: 1 }
+        ];
+      }
       console.log("Game state after loading:", gameState);
     } else {
       console.log("No saved game data found. Starting fresh.");
@@ -122,6 +130,10 @@ function loadPlayerData() {
   } catch (error) {
     console.error("Error loading game data, resetting storage:", error);
     localStorage.removeItem("gameState");
+    gameState.inventory = [
+      { name: "potion", quantity: 2 },
+      { name: "throwingknife", quantity: 1 }
+    ];
   }
 }
 
@@ -198,6 +210,8 @@ function updateUI() {
     useThrowingKnifeBtn: document.getElementById("useThrowingKnifeBtn"),
     useSmokeBombBtn: document.getElementById("useSmokeBombBtn"),
     useNetBtn: document.getElementById("useNetBtn"),
+    playerHealth: document.getElementById("player-health"),
+    enemyHealth: document.getElementById("enemy-health"),
   };
 
   if (elements.playerName) elements.playerName.textContent = gameState.playerName || "Player";
@@ -208,11 +222,25 @@ function updateUI() {
   if (elements.att) elements.att.textContent = gameState.stats.attack;
   if (elements.def) elements.def.textContent = gameState.stats.defense;
   if (elements.spd) elements.spd.textContent = gameState.stats.speed;
-  if (elements.enemyHP) elements.enemyHP.textContent = currentEnemy && currentEnemy.hp > 0 ? currentEnemy.hp : "No enemy";
+  if (elements.enemyHP) {
+    elements.enemyHP.textContent = currentEnemy && currentEnemy.hp > 0 ? currentEnemy.hp : "No enemy";
+  }
 
+  // Update health bars
+  if (elements.playerHealth) updateHealthBar("player-health", gameState.hp, gameState.maxHp);
+  if (elements.enemyHealth && currentEnemy && currentEnemy.name && currentEnemy.hp !== undefined) {
+    const enemyMaxHp = enemies[currentEnemy.name.toLowerCase()]?.hp || 1; // Fallback to 1 if undefined
+    updateHealthBar("enemy-health", currentEnemy.hp, enemyMaxHp);
+  }
+
+  // Update inventory
   if (elements.inventoryList) {
     console.log("Updating inventory list with:", gameState.inventory);
     elements.inventoryList.innerHTML = "";
+    if (!Array.isArray(gameState.inventory)) {
+      console.error("gameState.inventory is not an array:", gameState.inventory);
+      gameState.inventory = [];
+    }
     if (gameState.inventory.length === 0) {
       const p = document.createElement("p");
       p.className = "item";
@@ -228,7 +256,7 @@ function updateUI() {
     }
   }
 
-  // Consolidated button state update (removed duplicate)
+  // Update item button visibility and state
   const buttons = {
     potion: elements.usePotionBtn,
     throwingknife: elements.useThrowingKnifeBtn,
@@ -238,8 +266,13 @@ function updateUI() {
   Object.keys(buttons).forEach(itemName => {
     if (buttons[itemName]) {
       const item = gameState.inventory.find(i => i.name === itemName);
-      const onCooldown = gameState.cooldowns[itemName] > 0;
-      buttons[itemName].disabled = !item || item.quantity === 0 || onCooldown;
+      if (!item || item.quantity === 0) {
+        buttons[itemName].classList.add("hidden");
+      } else {
+        buttons[itemName].classList.remove("hidden");
+        const onCooldown = gameState.cooldowns[itemName] > 0;
+        buttons[itemName].disabled = onCooldown;
+      }
     }
   });
 }
@@ -259,7 +292,7 @@ function handleBuyItem(item) {
     addToInventory(item.name);
     console.log(`Post-buy inventory:`, gameState.inventory);
     savePlayerData();
-    updateUI(); // Single UI update covers all cases
+    updateUI();
     showShopDialogue();
     setTimeout(hideShopDialogue, 3000);
   } else {
@@ -291,7 +324,7 @@ function hideShopDialogue() {
 }
 
 function updateShopUI() {
-  updateUI(); // Reuse updateUI to avoid duplication
+  updateUI();
 }
 
 function playerUseItem(itemName) {
@@ -362,7 +395,7 @@ function startBattle(enemyType) {
   gameState.ac = calculateAC(gameState.baseAC, gameState.stats.speed + gameState.weapon.speed, gameState.stats.defense + gameState.weapon.defense);
   console.log(`A wild ${currentEnemy.name} appears! AC: ${currentEnemy.ac}`, currentEnemy);
   showAction(`A ${currentEnemy.name} appears, ready to fight!`);
-  updateUI();
+  updateUI(); // Line 398
   if (window.location.pathname.includes("ambush.html")) setTimeout(startAutoBattle, 1000);
 }
 
@@ -385,7 +418,9 @@ function autoBattleLoop() {
 
   setTimeout(() => {
     playerAttack();
-    if (currentEnemy && currentEnemy.hp > 0) setTimeout(() => { enemyAttack(); autoBattleLoop(); }, 1000);
+    if (battleActive && currentEnemy && currentEnemy.hp > 0) { // Added check to prevent continuation
+      setTimeout(() => { enemyAttack(); autoBattleLoop(); }, 1000);
+    }
   }, 1000);
 }
 
@@ -465,6 +500,7 @@ function endBattle(enemy) {
   document.getElementById("campBtn")?.classList.remove("hidden");
   document.getElementById("forestBtn")?.classList.remove("hidden");
 }
+
 function runAway() {
   if (!battleActive || !currentEnemy) {
     console.log("No active battle to run from!");
@@ -513,18 +549,10 @@ function levelUp() {
 
 function updateHealthBar(elementId, currentHealth, maxHealth) {
   const healthBar = document.getElementById(elementId);
-  let healthPercentage = (currentHealth / maxHealth) * 100;
-  
-  // Set width
-  healthBar.style.width = healthPercentage + "%";
-
-  // Change color based on health
-  if (healthPercentage > 50) {
-      healthBar.style.backgroundColor = "green";
-  } else if (healthPercentage > 20) {
-      healthBar.style.backgroundColor = "yellow";
-  } else {
-      healthBar.style.backgroundColor = "red";
+  if (healthBar) {
+    let healthPercentage = (currentHealth / maxHealth) * 100;
+    healthBar.style.width = `${healthPercentage}%`;
+    healthBar.style.backgroundColor = healthPercentage > 50 ? "green" : healthPercentage > 20 ? "yellow" : "red";
   }
 }
 
