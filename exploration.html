@@ -33,36 +33,31 @@
           <p>Gold: <span id="gold">0</span></p>
           <div class="inventory-dropdown">
             <button class="inventory-button">INV</button>
-            <div class="inventory-list" id="inventoryList">
-            </div>
+            <div class="inventory-list" id="inventoryList"></div>
           </div>
         </div>
       </div>
+
       <div class="combat-container hidden" id="combat-container">
         <div class="enemyHP">
-          <p>Enemy HP: <span id="enemyHP">20</span></p>
+          <p><span id="enemyName">Enemy</span> HP: <span id="enemyHP">20</span></p>
           <div class="health-bar-container">
             <div class="health-bar" id="enemy-health"></div>
           </div>
         </div>
         <div>
-          <img src="/assets/img_folder/enemies/bandit.jpeg" alt="" id="banditEnemy" class="hidden">
+          <img src="/assets/img_folder/enemies/bandit.jpeg" alt="Enemy" id="banditEnemy" class="hidden">
+        </div>
+        <div id="combatMenu" class="hidden" style="margin: 10px;">
+          <!-- Dynamically populated with Attack, Item, Run options -->
         </div>
       </div>
-      <div id="actionBox" class="hidden"> 
+
+      <div id="actionBox" class="hidden" style="height: 150px; overflow-y: auto;">
         <p id="actionText"></p>
       </div>
+
       <button id="viewLogBtn">View Log</button>
-      <div class="buttons hidden">
-          <button id="attackBtn">ATTACK</button>
-          <button id="usePotionBtn">USE POTION</button>
-          <button id="useThrowingKnifeBtn">THROW KNIFE</button>
-          <button id="useSmokeBombBtn">SMOKE BOMB</button>
-          <button id="useNetBtn">NET</button>
-          <a href="camp.html">
-            <button id="runAwayBtn">RUN AWAY</button>
-          </a>
-      </div>
       <div class="afterCombatBtns">
         <button id="forestBtn" class="forestBtn">Forest</button>
         <button id="campBtn" class="hidden">Return to Camp</button>
