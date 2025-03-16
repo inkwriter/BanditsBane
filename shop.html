@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shop</title>
+    <title>Shop - Bandit's Bane</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
@@ -13,9 +13,9 @@
     <div class="game-screen">
       <div class="stats">
         <div class="stats-left">
-          <span id="playerName"></span>
+          <p><span id="playerName">Unknown</span></p>
           <p>XP: <span id="xp">0/100</span></p>
-          <p>HP: <span id="hp">100</span></p>
+          <p>HP: <span id="hp">20</span></p>
           <div class="stats-dropdown">
             <button class="stats-btn">STATS</button>
             <div class="stats-list">
@@ -25,51 +25,29 @@
             </div>
           </div>
         </div>
-        <div class="stats-left">
-          <p>lvl <span id="level">1</span></p>
-          <p>Gold: <span id="gold">30</span></p>
+        <div class="stats-right">
+          <p>Lvl <span id="level">1</span></p>
+          <p>Gold: <span id="gold">100</span></p>
           <div class="inventory-dropdown">
             <button class="inventory-button">INV</button>
-            <div class="inventory-list" id="inventoryList">
-            </div>
+            <div class="inventory-list" id="inventoryList"></div>
           </div>
         </div>
       </div>
-      <div id="shopDialogueBox" class="dialogue-box hidden">
+      <div id="shopDialogueBox" class="dialogue-box">
         <p id="shopDialogueText">Shop Keeper: "Welcome!"</p>
       </div>
       <div>
-        <img src="/assets/img_folder/backgrounds/shop.jpeg" id="shop">
+        <img src="/assets/img_folder/backgrounds/shop.jpeg" id="shop" alt="Shop Background">
       </div>
-      <div id="actionBox" class="hidden"> <!-- Fixed typo: "hidde" → "hidden" -->
-        <p id="actionText"></p>
-      </div>
-      <div class="shopItems">
-          <div class="item">
-            <p>HP Potion</p>
-            <p>10 gold</p>
-            <button id="buyPotionsBtn" class="shopBtn">BUY</button>
-          </div>
-          <div class="item">
-            <p>Throwing Knife</p>
-            <p>15 gold</p>
-            <button id="buyThrowingKnifeBtn" class="shopBtn">BUY</button>
-          </div>
-          <div class="item">
-            <p>Smoke Bomb</p>
-            <p>20 gold</p>
-            <button id="buySmokeBombBtn" class="shopBtn">BUY</button>
-          </div>
-          <div class="item">
-            <p>Net</p>
-            <p>25 gold</p>
-            <button id="buyNetBtn" class="shopBtn">BUY</button>
-          </div>
+      <div id="actionBox" class="hidden" style="height: 150px; overflow-y: auto;"></div>
+      <div id="shopContainer">
+        <div id="buyList" class="shop-list"></div>
+        <div id="sellList" class="shop-list hidden"></div>
       </div>
       <div class="buttons">
-        <a href="camp.html">
-          <button id="backToTheWild">BACK TO THE WILD</button>
-        </a>
+        <button id="sellBtn">SELL ITEMS</button>
+        <button id="returnBtn">RETURN TO CAMP</button>
       </div>
     </div>
     <script src="/app.js"></script>

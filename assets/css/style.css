@@ -514,6 +514,98 @@ a button {
     flex-direction: row;
 }
 
+#classSelection {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Space between class options */
+    margin-top: 20px;
+    align-items: center; /* Center items on mobile */
+  }
+  
+  .classOption {
+    text-align: center;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    width: 90%; /* Full width on mobile, with some margin */
+    max-width: 400px; /* Cap width for readability */
+    box-sizing: border-box; /* Include padding in width */
+  }
+  
+  .introButton {
+    margin-top: 10px;
+    padding: 8px 16px;
+    font-family: 'Alegreya', serif;
+    font-size: 16px;
+  }
+
+  /* Ensure actionBox stays above shop items */
+#actionBox {
+    background-color: black;
+    color: white;
+    font-family: 'Courier New', monospace;
+    border: 2px solid #ccc;
+    padding: 10px;
+    margin: 10px auto; /* Centered with margin */
+    width: 80%;
+    max-width: 500px; /* Matches game-screen max-width */
+    height: 150px; /* Matches inline style */
+    overflow-y: auto;
+    text-align: left;
+}
+
+#actionBox.hidden {
+    display: none;
+}
+
+/* Shop container for two columns */
+#shopContainer {
+    display: flex;
+    flex-direction: column; /* Stack on mobile */
+    width: 80%;
+    max-width: 500px; /* Matches game-screen */
+    margin: 0 auto; /* Center under actionBox */
+}
+
+/* Shop lists (buy and sell) */
+.shop-list {
+    width: 100%;
+    background-color: #283618; /* Matches inventory dropdown */
+    color: #d9f99d;
+    border: 1px solid #d9f99d;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.shop-list p {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 10px 0; /* Space between rows */
+    padding: 5px;
+    background-color: #2d6a4f; /* Slight contrast */
+    border-radius: 3px;
+}
+
+.shop-list button {
+    background-color: #4f372d;
+    color: #ffd670;
+    border: 1px solid #ffd670;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-family: 'Alegreya', serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.shop-list button:hover {
+    background-color: #7f5539;
+    color: #e9ffdb;
+    transform: scale(1.05);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
 /* For tablets and medium-sized devices (768px and up) */
 @media only screen and (min-width: 768px) {
     #camp, #shop, #banditEnemy, #banditKingPic, #village {
@@ -560,6 +652,28 @@ a button {
     #animated-gif, #camp, #shop, #banditEnemy, #banditKingPic, #village {
         height: 300px;
     }
+
+    #classSelection {
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: stretch; /* Align heights on desktop */
+    }
+
+    .classOption {
+        width: 30%; /* Three across on larger screens */
+        max-width: none; /* Remove cap for desktop */
+    }
+
+    #shopContainer {
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 20px; /* Space between columns */
+    }
+
+    .shop-list {
+        width: 48%; /* Two columns with some gap */
+    }
+    
 }
 
 /* For desktops and large screens (1024px and up) */
