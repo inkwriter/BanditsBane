@@ -1,6 +1,3 @@
-// === Bandit's Bane - Non-Magical Single-File JS ===
-// Supports: index.html, camp.html, exploration.html, ambush.html, shop.html, gameover.html
-
 // ============================================================================
 // GAME CONSTANTS
 // ============================================================================
@@ -187,16 +184,49 @@ const enemies = {
         ability: "disarm",
         loot: { common: ["dagger", 60], rare: ["swiftBoots", 15] }
     },
-    banditLeader: {
-        name: "Bandit Leader",
-        hp: 25,
-        stats: { attack: 5, speed: 4, defense: 4 },
-        goldReward: 50,
+    hoshithesloth: {
+        name: "hoshiTheSloth",
+        hp: 50,
+        stats: { attack: 15, defense: 1, speed: 9 },
+        goldReward: 5000,
         xpReward: 50,
-        image: "/assets/img_folder/enemies/banditLeader.jpg",
+        image: "/assets/img_folder/enemies/hoshithesloth.jpg",
+        damage: "1d10",
+        ability: "evade",
+        loot: { common: [{ item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }], rare: [{ item: "dagger", chance: 10 }] }
+    },
+    valontheimmortal: {
+        name: "valonTheImmortal",
+        hp: 50,
+        stats: { attack: 6, defense: 15, speed: 9 },
+        goldReward: 5000,
+        xpReward: 50,
+        image: "/assets/img_folder/enemies/valontheimmortal.jpg",
+        damage: "1d10",
+        ability: "block",
+        loot: { common: [{ item: "chainmail", chance: 50 }], rare: [{ item: "dagger", chance: 10 }] }
+    },
+    dirtydave: {
+        name: "dirtyDave",
+        hp: 50,
+        stats: { attack: 10, defense: 1, speed: 15 },
+        goldReward: 5000,
+        xpReward: 50,
+        image: "/assets/img_folder/enemies/dirtydave.jpg",
+        damage: "1d10",
+        ability: "slash",
+        loot: { common: [{ item: "dagger", chance: 50 }, { item: "pocketSand", chance: 50 }, { item: "silverRing", chance: 50 }], rare: [{ item: "dagger", chance: 10 }] }
+    },
+    banditKing: {
+        name: "Bandit King",
+        hp: 50,
+        stats: { attack: 6, speed: 5, defense: 5 },
+        goldReward: 100,
+        xpReward: 150,
+        image: "/assets/img_folder/enemies/banditKing.jpeg",
         damage: "1d10",
         ability: "intimidate",
-        loot: { common: ["goldCoin", 75], rare: ["rareGem", 25] }
+        loot: { common: ["goldCoin", 80], rare: ["longsword", 50] }
     }
 };
 
@@ -634,7 +664,9 @@ function startBattle(enemyType) {
     gameState.ac = calculateAC(gameState);
     combatState.active = true;
     combatState.turn = "player";
-    showAction(`A ${combatState.currentEnemy.name} appears! Your turn.`);
+    showAction(enemyType === "banditKing" 
+        ? "The Bandit King emerges from the shadows—there’s no escape now!" 
+        : `A ${combatState.currentEnemy.name} appears! Your turn.`);
 
     const campBtn = document.getElementById("campBtn");
     const forestBtn = document.getElementById("forestBtn");
@@ -650,11 +682,10 @@ function startBattle(enemyType) {
         banditEnemyImg.classList.remove("hidden");
     }
 
-    showCombatMenu();
-    updateUI();
+    showCombatMenu(enemyType === "banditKing");
 }
 
-function showCombatMenu() {
+function showCombatMenu(disableRun = false) {
     const combatMenu = document.getElementById("combatMenu");
     if (!combatMenu) return;
     const isAmbush = window.location.pathname.includes("ambush.html");
@@ -662,13 +693,14 @@ function showCombatMenu() {
         <button id="attackOption">Attack</button>
         <button id="abilityOption">${gameState.ability?.name || "Ability"}</button>
         <button id="itemOption">Item</button>
-        ${!isAmbush ? '<button id="runOption">Run</button>' : ''}
+        ${!isAmbush && !disableRun ? '<button id="runOption">Run</button>' : ''}
     `;
     combatMenu.classList.remove("hidden");
     document.getElementById("attackOption")?.addEventListener("click", () => playerAction("attack"), { once: true });
     document.getElementById("abilityOption")?.addEventListener("click", () => playerAction("ability"), { once: true });
     document.getElementById("itemOption")?.addEventListener("click", showItemMenu, { once: true });
-    if (!isAmbush) document.getElementById("runOption")?.addEventListener("click", () => playerAction("run"), { once: true });
+    if (!isAmbush && !disableRun) document.getElementById("runOption")?.addEventListener("click", () => playerAction("run"), { once: true });
+    document.getElementById("viewLogOption")?.addEventListener("click", showCombatLog, { once: true });
 }
 
 function showItemMenu() {
@@ -681,6 +713,24 @@ function showItemMenu() {
         button.addEventListener("click", () => playerAction("item", button.dataset.item), { once: true });
     });
     document.getElementById("backOption")?.addEventListener("click", showCombatMenu, { once: true });
+}
+
+function showCombatLog() {
+    const logText = combatState.log.length > 0 
+        ? combatState.log.join("\n") 
+        : "No combat actions have occurred yet.";
+    const actionBox = document.getElementById("actionBox");
+    if (actionBox) {
+        actionBox.innerHTML = "";
+        const p = document.createElement("p");
+        p.textContent = "--- Combat Log ---\n" + logText;
+        actionBox.appendChild(p);
+        actionBox.classList.remove("hidden");
+        actionBox.scrollTop = actionBox.scrollHeight;
+    } else {
+        alert("Combat Log:\n" + logText);
+    }
+    setTimeout(showCombatMenu, 100);
 }
 
 function playerAction(action, itemName = null) {
@@ -784,7 +834,7 @@ function enemyTurn() {
     }
     combatState.turn = "player";
     showAction("Your turn.");
-    showCombatMenu();
+    showCombatMenu(enemy.name === "Bandit King"); // Re-apply disableRun for Bandit King
 }
 
 function updateEffects(entity) {
@@ -821,6 +871,16 @@ function endBattle() {
         summary += `\nLoot: ${commonRoll <= enemy.loot.common[1] ? enemy.loot.common[0] : ""}${commonRoll <= enemy.loot.common[1] && rareRoll <= enemy.loot.rare[1] ? ", " : ""}${rareRoll <= enemy.loot.rare[1] ? enemy.loot.rare[0] : ""}`;
     }
 
+    if (enemy.name === "Bandit King") {
+        summary += "\nVictory! The Bandit King is defeated, and the forest is safe!";
+        showAction(summary);
+        levelUp();
+        savePlayerData();
+        updateUI();
+        setTimeout(() => window.location.href = "gameover.html", 2000);
+        return;
+    }
+
     showAction(summary);
     levelUp();
     savePlayerData();
@@ -835,8 +895,10 @@ function endBattle() {
     } else if (currentPage.includes("exploration.html")) {
         const campBtn = document.getElementById("campBtn");
         const forestBtn = document.getElementById("forestBtn");
+        const kingBtn = document.getElementById("kingBtn");
         if (campBtn) campBtn.classList.remove("hidden");
         if (forestBtn) forestBtn.classList.remove("hidden");
+        if (kingBtn && gameState.level >= 5) kingBtn.classList.remove("hidden");
     }
 }
 
@@ -1018,7 +1080,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     "banditSniper",
                     "banditThug",
                     "banditRogue",
-                    "banditLeader"
+                    "banditLeader",
+                    "valonTheImmortal",
+                    "dirtyDave",
+                    "hoshiTheSloth"
                 ][specialRoll - 1];
             } else if (roll === 20) {
                 enemyType = "positive";
@@ -1032,6 +1097,18 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem("lastActionMessage", message);
             setTimeout(() => window.location.href = "camp.html", 1000);
         });
+        const kingBtn = document.getElementById("kingBtn");
+        if (gameState.level >= 5 && kingBtn) {
+            kingBtn.classList.remove("hidden");
+            kingBtn.addEventListener("click", () => {
+                showAction("You confront the Bandit King!");
+                savePlayerData();
+                startBattle("banditKing");
+            });
+        } else if (kingBtn) {
+            kingBtn.textContent = "Bandit King (Reach Level 5)";
+            kingBtn.disabled = true;
+        }
     } else if (page.includes("ambush.html")) {
         const enemyType = Object.keys(enemies)[rollDice(Object.keys(enemies).length) - 1];
         startBattle(enemyType);
