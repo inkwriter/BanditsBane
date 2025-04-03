@@ -508,10 +508,15 @@ a button {
     background: darkred;
 }
 
-#afterCombatBtns {
+.afterCombatBtns {
     display: flex;
     justify-content: center;
-    flex-direction: row;
+    flex-direction: column;
+    gap: 20px;
+}
+
+#afterCombatBtns button {
+    display: flex;
 }
 
 #classSelection {
@@ -794,7 +799,6 @@ a button {
     .stats-btn, .inventory-button {
         height: 40px;
         width: 80px;
-        font-size: 20px;
     }
 
     #backToTheWild {

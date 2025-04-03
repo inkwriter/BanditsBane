@@ -451,7 +451,9 @@ function rollDamage(damageString) {
 }
 
 function savePlayerData() {
-    localStorage.setItem("gameState", JSON.stringify(gameState));
+    const dataToSave = JSON.stringify(gameState);
+    console.log("Saving to localStorage:", dataToSave);
+    localStorage.setItem("gameState", dataToSave);
     console.log("Game saved");
 }
 
@@ -459,10 +461,25 @@ function loadPlayerData() {
     const savedData = localStorage.getItem("gameState");
     if (savedData) {
         gameState = JSON.parse(savedData);
-        if (!Array.isArray(gameState.inventory)) gameState.inventory = [{ name: "healingPotion", quantity: 2 }, { name: "shortSword", quantity: 1 }];
-        if (!gameState.equipped) gameState.equipped = { weapon: null, armor: null };
-        if (gameState.class) {
-            gameState.stats = { ...classes[gameState.class].stats };
+        if (!Array.isArray(gameState.inventory)) {
+            gameState.inventory = [{ name: "healingPotion", quantity: 2 }, { name: "shortSword", quantity: 1 }];
+        }
+        if (!gameState.equipped) {
+            gameState.equipped = { weapon: null, armor: null };
+        }
+        if (gameState.class && classes[gameState.class]) {
+            const baseStats = { ...classes[gameState.class].stats };
+            if (gameState.equipped.weapon) {
+                baseStats.attack += gameState.equipped.weapon.attack || 0;
+                baseStats.defense += gameState.equipped.weapon.defense || 0;
+                baseStats.speed += gameState.equipped.weapon.speed || 0;
+            }
+            if (gameState.equipped.armor) {
+                baseStats.attack += gameState.equipped.armor.attack || 0;
+                baseStats.defense += gameState.equipped.armor.defense || 0;
+                baseStats.speed += gameState.equipped.armor.speed || 0;
+            }
+            gameState.stats = baseStats;
             gameState.ability = classes[gameState.class].ability;
         }
     }
@@ -514,7 +531,6 @@ function equipItem(itemName, type) {
         return false;
     }
 
-    // Unequip current item of the same type
     const current = gameState.equipped[type];
     if (current) {
         gameState.stats.attack -= current.attack || 0;
@@ -524,13 +540,12 @@ function equipItem(itemName, type) {
         showAction(`Unequipped ${current.name}.`);
     }
 
-    // Equip new item
-    gameState.equipped[type] = item;
+    gameState.equipped[type] = { ...item }; // Ensure full item object with name
     gameState.stats.attack += item.attack || 0;
     gameState.stats.defense += item.defense || 0;
     gameState.stats.speed += item.speed || 0;
     showAction(`Equipped ${itemName}.`);
-    console.log(`Equipped ${itemName}:`, gameState.stats);
+    console.log("Equipped:", gameState.equipped);
 
     savePlayerData();
     updateUI();
@@ -547,6 +562,8 @@ function unequipItem(type) {
     addToInventory(current.name);
     gameState.equipped[type] = null;
     showAction(`Unequipped ${current.name}.`);
+    console.log("After unequipItem:", gameState.equipped);
+
     savePlayerData();
     updateUI();
 }
@@ -566,7 +583,9 @@ function updateUI() {
         def: document.getElementById("def"),
         spd: document.getElementById("spd"),
         equippedWeapon: document.getElementById("equippedWeapon"),
-        equippedArmor: document.getElementById("equippedArmor")
+        equippedArmor: document.getElementById("equippedArmor"),
+        enemyName: document.getElementById("enemyName"),
+        enemyHP: document.getElementById("enemyHP")
     };
 
     if (elements.playerName) elements.playerName.textContent = gameState.playerName;
@@ -577,23 +596,37 @@ function updateUI() {
     if (elements.att) elements.att.textContent = gameState.stats.attack;
     if (elements.def) elements.def.textContent = gameState.stats.defense;
     if (elements.spd) elements.spd.textContent = gameState.stats.speed;
-    if (elements.equippedWeapon) elements.equippedWeapon.textContent = gameState.equipped.weapon?.name || "None";
-    if (elements.equippedArmor) elements.equippedArmor.textContent = gameState.equipped.armor?.name || "None";
+    if (elements.equippedWeapon) {
+        elements.equippedWeapon.textContent = (gameState.equipped && gameState.equipped.weapon && gameState.equipped.weapon.name) 
+            ? gameState.equipped.weapon.name 
+            : "None";
+    }
+    if (elements.equippedArmor) {
+        elements.equippedArmor.textContent = (gameState.equipped && gameState.equipped.armor && gameState.equipped.armor.name) 
+            ? gameState.equipped.armor.name 
+            : "None";
+    }
     if (elements.inventoryList) {
         elements.inventoryList.innerHTML = gameState.inventory.length === 0
             ? "<p class='item'>Empty</p>"
             : gameState.inventory.map(item => `<p class="item">${item.name}: ${item.quantity}</p>`).join("");
     }
+    console.log("UI update - Equipped:", gameState.equipped);
 
-    if (window.location.pathname.includes("exploration.html") && !combatState.active) {
-        const campBtn = document.getElementById("campBtn");
-        const forestBtn = document.getElementById("forestBtn");
-        const kingBtn = document.getElementById("kingBtn");
-        if (campBtn) campBtn.classList.remove("hidden");
-        if (forestBtn) forestBtn.classList.remove("hidden");
-        if (kingBtn) {
-            if (gameState.level >= 5) kingBtn.classList.remove("hidden");
-            else kingBtn.classList.add("hidden");
+    if (combatState.active && combatState.currentEnemy) {
+        if (elements.enemyName) elements.enemyName.textContent = combatState.currentEnemy.name;
+        if (elements.enemyHP) elements.enemyHP.textContent = combatState.currentEnemy.hp;
+        const enemyHealthBar = document.getElementById("enemy-health");
+        if (enemyHealthBar) {
+            const enemyKey = combatState.currentEnemy.enemyType || combatState.currentEnemy.name.toLowerCase();
+            const enemyData = enemies[enemyKey];
+            if (!enemyData) {
+                console.error("Enemy not found in enemies object:", enemyKey, combatState.currentEnemy);
+                return;
+            }
+            const maxHp = enemyData.hp;
+            const hpPercent = (combatState.currentEnemy.hp / maxHp) * 100;
+            enemyHealthBar.style.width = `${hpPercent}%`;
         }
     }
 }
@@ -618,14 +651,19 @@ function showEquipMenu() {
     const weapons = gameState.inventory.filter(item => equipment[item.name]?.type === "weapon");
     const armors = gameState.inventory.filter(item => equipment[item.name]?.type === "armor");
 
+    // Ensure gameState.equipped is initialized
+    if (!gameState.equipped) {
+        gameState.equipped = { weapon: null, armor: null };
+    }
+
     equipMenu.innerHTML = `
         <h3>Equip Items</h3>
         <div class="equip-section">
-            <h4>Weapons (Equipped: ${gameState.equipped.weapon?.name || "None"})</h4>
+            <h4>Weapons (Equipped: ${(gameState.equipped.weapon && gameState.equipped.weapon.name) ? gameState.equipped.weapon.name : "None"})</h4>
             ${weapons.length > 0 
                 ? weapons.map(item => {
                     const stats = equipment[item.name];
-                    const isEquipped = gameState.equipped.weapon?.name === item.name;
+                    const isEquipped = gameState.equipped.weapon && gameState.equipped.weapon.name === item.name;
                     return `
                         <p>
                             ${item.name} (${item.quantity})
@@ -641,11 +679,11 @@ function showEquipMenu() {
                 : "<p>No weapons available</p>"}
         </div>
         <div class="equip-section">
-            <h4>Armor (Equipped: ${gameState.equipped.armor?.name || "None"})</h4>
+            <h4>Armor (Equipped: ${(gameState.equipped.armor && gameState.equipped.armor.name) ? gameState.equipped.armor.name : "None"})</h4>
             ${armors.length > 0 
                 ? armors.map(item => {
                     const stats = equipment[item.name];
-                    const isEquipped = gameState.equipped.armor?.name === item.name;
+                    const isEquipped = gameState.equipped.armor && gameState.equipped.armor.name === item.name;
                     return `
                         <p>
                             ${item.name} (${item.quantity})
@@ -670,7 +708,7 @@ function showEquipMenu() {
             const itemName = btn.dataset.item;
             const type = btn.dataset.type;
             equipItem(itemName, type);
-            showEquipMenu(); // Refresh menu
+            showEquipMenu();
         }, { once: true });
     });
 
@@ -679,7 +717,7 @@ function showEquipMenu() {
             const itemName = btn.dataset.item;
             const type = btn.dataset.type;
             unequipItem(type);
-            showEquipMenu(); // Refresh menu
+            showEquipMenu();
         }, { once: true });
     });
 
@@ -687,6 +725,8 @@ function showEquipMenu() {
         equipMenu.classList.add("hidden");
         showAction("You’re back at camp.");
     }, { once: true });
+
+    console.log("showEquipMenu - gameState.equipped:", gameState.equipped);
 }
 
 // ============================================================================
@@ -732,56 +772,62 @@ function startBattle(enemyType) {
         updateUI();
         savePlayerData();
         return;
+    } else {
+        if (!enemies[enemyType]) {
+            console.error("Invalid enemy type:", enemyType);
+            return;
+        }
+        combatState.currentEnemy = {
+            ...enemies[enemyType],
+            enemyType: enemyType, // Store the original key for reliable lookup
+            ac: calculateAC(enemies[enemyType]),
+            poisonTurns: 0,
+            trapTurns: 0,
+            blindTurns: 0,
+            evadeTurns: 0,
+            sharpenTurns: 0,
+            stunTurns: 0,
+            attackReduction: 0,
+            attackReductionTurns: 0,
+            speedBonus: 0,
+            speedBonusTurns: 0,
+            tauntTurns: 0,
+            frenzyBonus: 0,
+            blockBonus: 0,
+            blockTurns: 0,
+            feintBonus: 0,
+            feintTurns: 0,
+            speedReduction: 0,
+            speedReductionTurns: 0
+        };
+        gameState.ac = calculateAC(gameState);
+        combatState.active = true;
+        combatState.turn = "player";
+        showAction(enemyType === "banditKing" 
+            ? "The Bandit King emerges from the shadows—there’s no escape now!" 
+            : `A ${combatState.currentEnemy.name} appears! Your turn.`);
+
+        const enemyNameEl = document.getElementById("enemyName");
+        const enemyHPEl = document.getElementById("enemyHP");
+        if (enemyNameEl) enemyNameEl.textContent = combatState.currentEnemy.name;
+        if (enemyHPEl) enemyHPEl.textContent = combatState.currentEnemy.hp;
+
+        const campBtn = document.getElementById("campBtn");
+        const forestBtn = document.getElementById("forestBtn");
+        if (campBtn) campBtn.classList.add("hidden");
+        if (forestBtn) forestBtn.classList.add("hidden");
+
+        const combatContainer = document.getElementById("combat-container");
+        if (combatContainer) combatContainer.classList.remove("hidden");
+
+        const banditEnemyImg = document.getElementById("banditEnemy");
+        if (banditEnemyImg) {
+            banditEnemyImg.src = enemies[enemyType].image;
+            banditEnemyImg.classList.remove("hidden");
+        }
+
+        showCombatMenu(enemyType === "banditKing");
     }
-
-    if (!enemies[enemyType]) {
-        console.error("Invalid enemy type:", enemyType);
-        return;
-    }
-    combatState.currentEnemy = {
-        ...enemies[enemyType],
-        ac: calculateAC(enemies[enemyType]),
-        poisonTurns: 0,
-        trapTurns: 0,
-        blindTurns: 0,
-        evadeTurns: 0,
-        sharpenTurns: 0,
-        stunTurns: 0,
-        attackReduction: 0,
-        attackReductionTurns: 0,
-        speedBonus: 0,
-        speedBonusTurns: 0,
-        tauntTurns: 0,
-        frenzyBonus: 0,
-        blockBonus: 0,
-        blockTurns: 0,
-        feintBonus: 0,
-        feintTurns: 0,
-        speedReduction: 0,
-        speedReductionTurns: 0
-    };
-    gameState.ac = calculateAC(gameState);
-    combatState.active = true;
-    combatState.turn = "player";
-    showAction(enemyType === "banditKing" 
-        ? "The Bandit King emerges from the shadows—there’s no escape now!" 
-        : `A ${combatState.currentEnemy.name} appears! Your turn.`);
-
-    const campBtn = document.getElementById("campBtn");
-    const forestBtn = document.getElementById("forestBtn");
-    if (campBtn) campBtn.classList.add("hidden");
-    if (forestBtn) forestBtn.classList.add("hidden");
-
-    const combatContainer = document.getElementById("combat-container");
-    if (combatContainer) combatContainer.classList.remove("hidden");
-
-    const banditEnemyImg = document.getElementById("banditEnemy");
-    if (banditEnemyImg) {
-        banditEnemyImg.src = enemies[enemyType].image;
-        banditEnemyImg.classList.remove("hidden");
-    }
-
-    showCombatMenu(enemyType === "banditKing");
 }
 
 function showCombatMenu(disableRun = false) {
