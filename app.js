@@ -601,12 +601,7 @@ function startBattle(enemyType) {
             gameState.gold -= goldLoss;
             message = `A pickpocket swipes ${goldLoss} gold from you!`;
         } else {
-            const item = gameState.inventory[Math.floor(Math.random() * gameState.inventory.length)];
-            if (item && removeFromInventory(item.name)) {
-                message = `You trip and lose a ${item.name}!`;
-            } else {
-                message = "You stumble but lose nothing.";
-            }
+            message = `You don't find anything`;
         }
         showAction(message);
         updateUI();
