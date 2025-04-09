@@ -39,6 +39,7 @@ let combatState = {
 const classes = {
     warrior: {
         stats: { attack: 5, defense: 3, speed: 1 },
+        levelUpBonuses: { attack: 2, defense: 1, speed: 0 }, // +2 Attack, +1 Defense
         ability: {
             name: "Cleave",
             effect: (user, target) => {
@@ -50,6 +51,7 @@ const classes = {
     },
     rogue: {
         stats: { attack: 3, defense: 1, speed: 5 },
+        levelUpBonuses: { attack: 1, defense: 0, speed: 2 }, // +1 Attack, +2 Speed
         ability: {
             name: "Backstab",
             effect: (user, target) => {
@@ -61,6 +63,7 @@ const classes = {
     },
     guardian: {
         stats: { attack: 3, defense: 5, speed: 1 },
+        levelUpBonuses: { attack: 1, defense: 2, speed: 0 }, // +1 Attack, +2 Defense
         ability: {
             name: "Shield Bash",
             effect: (user, target) => {
@@ -105,7 +108,7 @@ const enemies = {
         image: "/assets/img_folder/enemies/thief.jpg",
         damage: "1d4",
         ability: "evade",
-        loot: { common: ["lockpick", 40], rare: ["swiftBoots", 8] }
+        loot: { common: ["raregem", 40], rare: ["swiftBoots", 8] }
     },
     trickster: {
         name: "Trickster",
@@ -127,7 +130,7 @@ const enemies = {
         image: "/assets/img_folder/enemies/bountyHunter.jpg",
         damage: "1d8",
         ability: "bash",
-        loot: { common: ["goldCoin", 50], rare: ["shortSword", 20] }
+        loot: { common: ["wolfpelt", 50], rare: ["shortSword", 20] }
     },
     banditScout: {
         name: "Bandit Scout",
@@ -138,7 +141,7 @@ const enemies = {
         image: "/assets/img_folder/enemies/banditScout.jpg",
         damage: "1d6",
         ability: "ambush",
-        loot: { common: ["lockpick", 50], rare: ["cloak", 10] }
+        loot: { common: ["wolfpelt", 50], rare: ["cloak", 10] }
     },
     banditBrute: {
         name: "Bandit Brute",
@@ -149,7 +152,7 @@ const enemies = {
         image: "/assets/img_folder/enemies/banditBrute.jpg",
         damage: "1d8",
         ability: "charge",
-        loot: { common: ["goldCoin", 50], rare: ["chainmail", 10] }
+        loot: { common: ["wolfpelt", 50], rare: ["chainmail", 10] }
     },
     banditSniper: {
         name: "Bandit Sniper",
@@ -171,7 +174,7 @@ const enemies = {
         image: "/assets/img_folder/enemies/banditThug.jpg",
         damage: "1d6",
         ability: "bash",
-        loot: { common: ["goldCoin", 50], rare: ["leatherArmor", 10] }
+        loot: { common: ["wolfpelt", 50], rare: ["leatherArmor", 10] }
     },
     banditRogue: {
         name: "Bandit Rogue",
@@ -226,7 +229,7 @@ const enemies = {
         image: "/assets/img_folder/enemies/banditKing.jpeg",
         damage: "1d10",
         ability: "intimidate",
-        loot: { common: ["goldCoin", 80], rare: ["longsword", 50] }
+        loot: { common: ["wolfpelt", 80], rare: ["longsword", 50] }
     }
 };
 
@@ -235,12 +238,12 @@ const equipment = {
     longsword: { type: "weapon", damage: "1d8", attack: 2, defense: 0, speed: -1, price: 30 },
     dagger: { type: "weapon", damage: "1d4", attack: 0, defense: 0, speed: 2, price: 15 },
     bow: { type: "weapon", damage: "1d6", attack: 1, defense: 0, speed: 1, price: 25 },
-    spear: { type: "weapon", damage: "1d8", attack: 1, defense: 1, speed: 0, price: 25 },
-    staff: { type: "weapon", damage: "1d6", attack: 0, defense: 1, speed: 0, price: 20 },
+    // spear: { type: "weapon", damage: "1d8", attack: 1, defense: 1, speed: 0, price: 25 },
+    // staff: { type: "weapon", damage: "1d6", attack: 0, defense: 1, speed: 0, price: 20 },
     leatherArmor: { type: "armor", attack: 0, defense: 2, speed: 0, price: 30 },
     chainmail: { type: "armor", attack: 0, defense: 4, speed: -1, price: 50 },
     plateArmor: { type: "armor", attack: 0, defense: 6, speed: -2, price: 80 },
-    cloak: { type: "armor", attack: 0, defense: 1, speed: 1, price: 20 },
+    // cloak: { type: "armor", attack: 0, defense: 1, speed: 1, price: 20 },
     swiftBoots: { type: "armor", attack: 0, defense: 0, speed: 3, price: 40 }
 };
 
@@ -252,20 +255,20 @@ const items = {
         },
         price: 10
     },
-    herbalSalve: {
+   /* herbalSalve: {
         effect: (user) => {
             user.hp = Math.min(MAX_HP, user.hp + 5);
             return `${user.playerName} applies Herbal Salve, healing 5 HP!`;
         },
         price: 5
-    },
+    }, 
     campRations: {
         effect: (user) => {
             user.hp = Math.min(MAX_HP, user.hp + 10);
             return `${user.playerName} eats Camp Rations, recovering 10 HP!`;
         },
         price: 8
-    },
+    }, */
     bomb: {
         effect: (user, target) => {
             const dmg = rollDamage("2d6");
@@ -303,9 +306,9 @@ const items = {
         },
         price: 5
     },
-    lockpick: { effect: () => "A tool for opening locks—useless in combat.", price: 10, sellPrice: 5 },
+    // lockpick: { effect: () => "A tool for opening locks—useless in combat.", price: 10, sellPrice: 5 },
     wolfPelt: { effect: () => "A pelt from a wolf—good for trading.", price: 0, sellPrice: 8 },
-    goldCoin: { effect: () => "A shiny coin—worth something to someone.", price: 0, sellPrice: 1 },
+    // goldCoin: { effect: () => "A shiny coin—worth something to someone.", price: 0, sellPrice: 1 },
     rareGem: { effect: () => "A valuable gemstone—rare and precious.", price: 0, sellPrice: 50 }
 };
 
@@ -480,10 +483,16 @@ function loadPlayerData() {
                 baseStats.speed += gameState.equipped.armor.speed || 0;
             }
             gameState.stats = baseStats;
+            // Apply cumulative level bonuses
+            const levelBonusCount = gameState.level - 1; // Level 1 = no bonus
+            const bonuses = classes[gameState.class].levelUpBonuses;
+            gameState.stats.attack += levelBonusCount * bonuses.attack;
+            gameState.stats.defense += levelBonusCount * bonuses.defense;
+            gameState.stats.speed += levelBonusCount * bonuses.speed;
             gameState.ability = classes[gameState.class].ability;
         }
     }
-    console.log("Game loaded:", gameState);
+    console.log("Loaded stats:", gameState.stats);
 }
 
 function calculateAC(entity) {
@@ -540,7 +549,7 @@ function equipItem(itemName, type) {
         showAction(`Unequipped ${current.name}.`);
     }
 
-    gameState.equipped[type] = { ...item }; // Ensure full item object with name
+    gameState.equipped[type] = { name: itemName, ...item }; // Fixed line
     gameState.stats.attack += item.attack || 0;
     gameState.stats.defense += item.defense || 0;
     gameState.stats.speed += item.speed || 0;
@@ -814,8 +823,12 @@ function startBattle(enemyType) {
 
         const campBtn = document.getElementById("campBtn");
         const forestBtn = document.getElementById("forestBtn");
+        const mountainBtn = document.getElementById("mountainBtn");
+        const swampBtn = document.getElementById("swampBtn");
         if (campBtn) campBtn.classList.add("hidden");
         if (forestBtn) forestBtn.classList.add("hidden");
+        if (swampBtn) swampBtn.classList.add("hidden");
+        if (mountainBtn) mountainBtn.classList.add("hidden");
 
         const combatContainer = document.getElementById("combat-container");
         if (combatContainer) combatContainer.classList.remove("hidden");
@@ -851,13 +864,19 @@ function showCombatMenu(disableRun = false) {
 function showItemMenu() {
     const combatMenu = document.getElementById("combatMenu");
     if (!combatMenu) return;
-    combatMenu.innerHTML = gameState.inventory.map(item => `
-        <button class="itemOption" data-item="${item.name}">${item.name} (${item.quantity})</button>
-    `).join("") + `<button id="backOption">Back</button>`;
+
+    const consumableItems = gameState.inventory.filter(item => items[item.name] && !equipment[item.name]);
+
+    combatMenu.innerHTML = consumableItems.length > 0 
+        ? consumableItems.map(item => `
+            <button class="itemOption" data-item="${item.name}">${item.name} (${item.quantity})</button>
+        `).join("") + `<button id="backOption">Back</button>`
+        : `<p>No usable items available!</p><button id="backOption">Back</button>`;
+
     document.querySelectorAll(".itemOption").forEach(button => {
         button.addEventListener("click", () => playerAction("item", button.dataset.item), { once: true });
     });
-    document.getElementById("backOption")?.addEventListener("click", showCombatMenu, { once: true });
+    document.getElementById("backOption")?.addEventListener("click", () => showCombatMenu(), { once: true });
 }
 
 function showCombatLog() {
@@ -883,7 +902,15 @@ function playerAction(action, itemName = null) {
     hideCombatMenu();
     let message = "";
     if (action === "attack") {
-        message = performAttack(gameState, combatState.currentEnemy);
+        const playerSpeed = gameState.stats.speed + (gameState.equipped?.armor?.speed || 0) + (gameState.equipped?.weapon?.speed || 0);
+        const extraAttacks = Math.min(2, Math.floor(playerSpeed / 10));
+        const totalAttacks = 1 + extraAttacks;
+        
+        message = `You prepare to strike ${totalAttacks} time${totalAttacks > 1 ? "s" : ""}! `;
+        for (let i = 0; i < totalAttacks && combatState.currentEnemy.hp > 0; i++) {
+            const attackMessage = performAttack(gameState, combatState.currentEnemy);
+            message += `${i > 0 ? " Then, " : ""}${attackMessage} `;
+        }
     } else if (action === "ability") {
         message = gameState.ability.effect(gameState, combatState.currentEnemy);
     } else if (action === "item" && itemName) {
@@ -891,7 +918,7 @@ function playerAction(action, itemName = null) {
     } else if (action === "run") {
         message = runAway();
     }
-    showAction(message);
+    showAction(message.trim());
     updateEffects(gameState);
     updateUI();
     savePlayerData();
@@ -1094,8 +1121,10 @@ function handleBuyItem(itemName, price) {
 
 function handleSellItem(itemName) {
     console.log("Handling sell for:", itemName);
-    const item = items[itemName] || equipment[itemName];
-    const sellPrice = item.sellPrice || Math.floor(item.price / 2);
+    const item = items[itemName] || equipment[itemName] || {};
+    const sellPrice = item.sellPrice !== undefined 
+        ? item.sellPrice 
+        : (item.price !== undefined ? Math.floor(item.price / 2) : 1);
     if (removeFromInventory(itemName)) {
         gameState.gold += sellPrice;
         showAction(`Sold ${itemName} for ${sellPrice} Gold!`);
@@ -1128,8 +1157,11 @@ function updateShopUI() {
 
     if (sellList) {
         sellList.innerHTML = gameState.inventory.map(item => {
-            const data = equipment[item.name] || items[item.name];
-            const sellPrice = data.sellPrice || Math.floor(data.price / 2);
+            const data = equipment[item.name] || items[item.name] || {};
+            // Use sellPrice if defined, else price/2, else 1 as fallback
+            const sellPrice = data.sellPrice !== undefined 
+                ? data.sellPrice 
+                : (data.price !== undefined ? Math.floor(data.price / 2) : 1);
             return `<p>${item.name} (${item.quantity}): ${sellPrice} Gold <button class="sellBtn" data-item="${item.name}">Sell</button></p>`;
         }).join("");
         const sellButtons = document.querySelectorAll(".sellBtn");
