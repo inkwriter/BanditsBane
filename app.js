@@ -20,10 +20,13 @@ let gameState = {
     gold: 100,
     inventory: [
         { name: "healingPotion", quantity: 2 },
-        { name: "shortSword", quantity: 1 }
+        { name: "shortSword", quantity: 1 },
+        { name: "poisonVial", quantity: 1 }
     ],
     equipped: { weapon: null, armor: null },
-    ability: null
+    ability: null,
+    poisonStacks: [],
+    bleedStacks: [] // NEW: Track bleed stacks for player
 };
 
 let combatState = {
@@ -39,7 +42,7 @@ let combatState = {
 const classes = {
     warrior: {
         stats: { attack: 5, defense: 3, speed: 1 },
-        levelUpBonuses: { attack: 2, defense: 1, speed: 0 }, // +2 Attack, +1 Defense
+        levelUpBonuses: { attack: 2, defense: 1, speed: 0 },
         ability: {
             name: "Cleave",
             effect: (user, target) => {
@@ -51,7 +54,7 @@ const classes = {
     },
     rogue: {
         stats: { attack: 3, defense: 1, speed: 5 },
-        levelUpBonuses: { attack: 1, defense: 0, speed: 2 }, // +1 Attack, +2 Speed
+        levelUpBonuses: { attack: 1, defense: 0, speed: 2 },
         ability: {
             name: "Backstab",
             effect: (user, target) => {
@@ -63,7 +66,7 @@ const classes = {
     },
     guardian: {
         stats: { attack: 3, defense: 5, speed: 1 },
-        levelUpBonuses: { attack: 1, defense: 2, speed: 0 }, // +1 Attack, +2 Defense
+        levelUpBonuses: { attack: 1, defense: 2, speed: 0 },
         ability: {
             name: "Shield Bash",
             effect: (user, target) => {
@@ -236,14 +239,19 @@ const enemies = {
 const equipment = {
     shortSword: { type: "weapon", damage: "1d6", attack: 1, defense: 0, speed: 0, price: 20 },
     longsword: { type: "weapon", damage: "1d8", attack: 2, defense: 0, speed: -1, price: 30 },
-    dagger: { type: "weapon", damage: "1d4", attack: 0, defense: 0, speed: 2, price: 15 },
+    dagger: { 
+        type: "weapon", 
+        damage: "1d4", 
+        attack: 0, 
+        defense: 0, 
+        speed: 2, 
+        price: 15, 
+        bleedChance: 30 // NEW: 30% chance to apply bleed on hit
+    },
     bow: { type: "weapon", damage: "1d6", attack: 1, defense: 0, speed: 1, price: 25 },
-    // spear: { type: "weapon", damage: "1d8", attack: 1, defense: 1, speed: 0, price: 25 },
-    // staff: { type: "weapon", damage: "1d6", attack: 0, defense: 1, speed: 0, price: 20 },
     leatherArmor: { type: "armor", attack: 0, defense: 2, speed: 0, price: 30 },
     chainmail: { type: "armor", attack: 0, defense: 4, speed: -1, price: 50 },
     plateArmor: { type: "armor", attack: 0, defense: 6, speed: -2, price: 80 },
-    // cloak: { type: "armor", attack: 0, defense: 1, speed: 1, price: 20 },
     swiftBoots: { type: "armor", attack: 0, defense: 0, speed: 3, price: 40 }
 };
 
@@ -255,20 +263,6 @@ const items = {
         },
         price: 10
     },
-   /* herbalSalve: {
-        effect: (user) => {
-            user.hp = Math.min(MAX_HP, user.hp + 5);
-            return `${user.playerName} applies Herbal Salve, healing 5 HP!`;
-        },
-        price: 5
-    }, 
-    campRations: {
-        effect: (user) => {
-            user.hp = Math.min(MAX_HP, user.hp + 10);
-            return `${user.playerName} eats Camp Rations, recovering 10 HP!`;
-        },
-        price: 8
-    }, */
     bomb: {
         effect: (user, target) => {
             const dmg = rollDamage("2d6");
@@ -279,10 +273,26 @@ const items = {
     },
     poisonDart: {
         effect: (user, target) => {
-            target.poisonTurns = 3;
-            return `${user.playerName} fires a Poison Dart—${target.name} is poisoned!`;
+            if (target.poisonStacks.length < 5) {
+                target.poisonStacks.push(1);
+                return `${user.playerName} fires a Poison Dart—${target.name} gains a poison stack (${target.poisonStacks.length}/5)!`;
+            }
+            return `${user.playerName} fires a Poison Dart, but ${target.name} is already at max poison stacks!`;
         },
         price: 15
+    },
+    poisonVial: {
+        effect: (user, target) => {
+            const stacksToAdd = Math.min(2, 5 - target.poisonStacks.length);
+            if (stacksToAdd > 0) {
+                for (let i = 0; i < stacksToAdd; i++) {
+                    target.poisonStacks.push(1);
+                }
+                return `${user.playerName} throws a Poison Vial, applying ${stacksToAdd} poison stack${stacksToAdd > 1 ? "s" : ""} (${target.poisonStacks.length}/5)!`;
+            }
+            return `${user.playerName} throws a Poison Vial, but ${target.name} is already at max poison stacks!`;
+        },
+        price: 25
     },
     sharpeningStone: {
         effect: (user) => {
@@ -306,9 +316,7 @@ const items = {
         },
         price: 5
     },
-    // lockpick: { effect: () => "A tool for opening locks—useless in combat.", price: 10, sellPrice: 5 },
     wolfPelt: { effect: () => "A pelt from a wolf—good for trading.", price: 0, sellPrice: 8 },
-    // goldCoin: { effect: () => "A shiny coin—worth something to someone.", price: 0, sellPrice: 1 },
     rareGem: { effect: () => "A valuable gemstone—rare and precious.", price: 0, sellPrice: 50 }
 };
 
@@ -334,8 +342,12 @@ const enemyAbilities = {
     slash: (user, target) => {
         const dmg = rollDamage(user.damage) + user.stats.attack;
         target.hp -= dmg;
-        if (rollDice(100) <= 20) target.poisonTurns = 3;
-        return `${user.name} slashes for ${dmg} damage${target.poisonTurns > 0 ? " and causes bleeding!" : ""}!`;
+        let poisonMessage = "";
+        if (rollDice(100) <= 20 && target.poisonStacks.length < 5) {
+            target.poisonStacks.push(1);
+            poisonMessage = ` and applies a poison stack (${target.poisonStacks.length}/5)`;
+        }
+        return `${user.name} slashes for ${dmg} damage${poisonMessage}!`;
     },
     howl: (user, target) => {
         target.attackReduction = 1;
@@ -465,7 +477,7 @@ function loadPlayerData() {
     if (savedData) {
         gameState = JSON.parse(savedData);
         if (!Array.isArray(gameState.inventory)) {
-            gameState.inventory = [{ name: "healingPotion", quantity: 2 }, { name: "shortSword", quantity: 1 }];
+            gameState.inventory = [{ name: "healingPotion", quantity: 2 }, { name: "shortSword", quantity: 1 }, { name: "poisonVial", quantity: 1 }];
         }
         if (!gameState.equipped) {
             gameState.equipped = { weapon: null, armor: null };
@@ -483,14 +495,16 @@ function loadPlayerData() {
                 baseStats.speed += gameState.equipped.armor.speed || 0;
             }
             gameState.stats = baseStats;
-            // Apply cumulative level bonuses
-            const levelBonusCount = gameState.level - 1; // Level 1 = no bonus
+            const levelBonusCount = gameState.level - 1;
             const bonuses = classes[gameState.class].levelUpBonuses;
             gameState.stats.attack += levelBonusCount * bonuses.attack;
             gameState.stats.defense += levelBonusCount * bonuses.defense;
             gameState.stats.speed += levelBonusCount * bonuses.speed;
             gameState.ability = classes[gameState.class].ability;
         }
+        // NEW: Ensure bleedStacks exists
+        if (!gameState.bleedStacks) gameState.bleedStacks = [];
+        if (!gameState.poisonStacks) gameState.poisonStacks = [];
     }
     console.log("Loaded stats:", gameState.stats);
 }
@@ -549,7 +563,7 @@ function equipItem(itemName, type) {
         showAction(`Unequipped ${current.name}.`);
     }
 
-    gameState.equipped[type] = { name: itemName, ...item }; // Fixed line
+    gameState.equipped[type] = { name: itemName, ...item };
     gameState.stats.attack += item.attack || 0;
     gameState.stats.defense += item.defense || 0;
     gameState.stats.speed += item.speed || 0;
@@ -660,7 +674,6 @@ function showEquipMenu() {
     const weapons = gameState.inventory.filter(item => equipment[item.name]?.type === "weapon");
     const armors = gameState.inventory.filter(item => equipment[item.name]?.type === "armor");
 
-    // Ensure gameState.equipped is initialized
     if (!gameState.equipped) {
         gameState.equipped = { weapon: null, armor: null };
     }
@@ -677,7 +690,7 @@ function showEquipMenu() {
                         <p>
                             ${item.name} (${item.quantity})
                             <span class="stat-preview">
-                                [A:${stats.attack || 0} D:${stats.defense || 0} S:${stats.speed || 0}]
+                                [A:${stats.attack || 0} D:${stats.defense || 0} S:${stats.speed || 0}]${stats.bleedChance ? ` Bleed:${stats.bleedChance}%` : ""}
                             </span>
                             <button class="equipBtn" data-item="${item.name}" data-type="weapon" ${isEquipped ? "disabled" : ""}>
                                 ${isEquipped ? "Equipped" : "Equip"}
@@ -788,9 +801,10 @@ function startBattle(enemyType) {
         }
         combatState.currentEnemy = {
             ...enemies[enemyType],
-            enemyType: enemyType, // Store the original key for reliable lookup
+            enemyType: enemyType,
             ac: calculateAC(enemies[enemyType]),
-            poisonTurns: 0,
+            poisonStacks: [],
+            bleedStacks: [], // NEW: Track bleed stacks for enemy
             trapTurns: 0,
             blindTurns: 0,
             evadeTurns: 0,
@@ -953,8 +967,16 @@ function performAttack(attacker, target) {
         const reduction = attacker.playerName ? (target.blockBonus || 0) : Math.floor(gameState.stats.defense / 2);
         damage = Math.max(1, damage - reduction);
         target.hp -= damage;
+
+        // NEW: Apply bleed if attacker is player with dagger
+        let bleedMessage = "";
+        if (attacker.playerName && weapon.name === "dagger" && target.bleedStacks.length < 3 && rollDice(100) <= weapon.bleedChance) {
+            target.bleedStacks.push({ damage: 3, turns: 3 });
+            bleedMessage = ` and causes ${targetName} to bleed (${target.bleedStacks.length}/3)!`;
+        }
+
         if (!attacker.playerName && enemyAbilities.counter) showAction(enemyAbilities.counter(target, attacker));
-        return `${name} hits ${targetName} for ${damage} damage${reduction > 0 ? ` (-${reduction})` : ""}!`;
+        return `${name} hits ${targetName} for ${damage} damage${reduction > 0 ? ` (-${reduction})` : ""}${bleedMessage}!`;
     }
     return `${name} swings at ${targetName} but misses!`;
 }
@@ -962,6 +984,8 @@ function performAttack(attacker, target) {
 function runAway() {
     const damage = rollDice(4);
     gameState.hp -= damage;
+    gameState.poisonStacks = [];
+    gameState.bleedStacks = []; // NEW: Clear bleed stacks
     showAction(`You try to flee but take ${damage} damage from ${combatState.currentEnemy.name}!`);
     updateUI();
     savePlayerData();
@@ -1011,17 +1035,58 @@ function enemyTurn() {
 
 function updateEffects(entity) {
     if (entity.sharpenTurns > 0) entity.sharpenTurns--;
-    if (entity.poisonTurns > 0) { entity.hp -= 2; entity.poisonTurns--; }
-    if (entity.trapTurns > 0) { entity.trapTurns--; if (entity.trapTurns === 0) entity.stats.speed = enemies[entity.name.toLowerCase()]?.stats.speed || entity.stats.speed; }
+    if (entity.poisonStacks.length > 0) {
+        let totalPoisonDamage = 0;
+        entity.poisonStacks = entity.poisonStacks.map(stack => {
+            const newDamage = stack * 2;
+            totalPoisonDamage += newDamage;
+            return newDamage;
+        });
+        entity.hp -= totalPoisonDamage;
+        const entityName = entity.playerName || entity.name || "Unknown";
+        showAction(`${entityName} takes ${totalPoisonDamage} damage from ${entity.poisonStacks.length} poison stack${entity.poisonStacks.length > 1 ? "s" : ""}!`);
+    }
+    // NEW: Process bleed stacks
+    if (entity.bleedStacks.length > 0) {
+        let totalBleedDamage = 0;
+        entity.bleedStacks = entity.bleedStacks.filter(stack => stack.turns > 0).map(stack => {
+            totalBleedDamage += stack.damage;
+            return { ...stack, turns: stack.turns - 1 };
+        });
+        if (totalBleedDamage > 0) {
+            entity.hp -= totalBleedDamage;
+            const entityName = entity.playerName || entity.name || "Unknown";
+            showAction(`${entityName} takes ${totalBleedDamage} damage from ${entity.bleedStacks.length} bleed stack${entity.bleedStacks.length > 1 ? "s" : ""}!`);
+        }
+    }
+    if (entity.trapTurns > 0) {
+        entity.trapTurns--;
+        if (entity.trapTurns === 0) entity.stats.speed = enemies[entity.name?.toLowerCase()]?.stats.speed || entity.stats.speed;
+    }
     if (entity.blindTurns > 0) entity.blindTurns--;
     if (entity.evadeTurns > 0) entity.evadeTurns--;
     if (entity.stunTurns > 0) entity.stunTurns--;
-    if (entity.attackReductionTurns > 0) { entity.attackReductionTurns--; if (entity.attackReductionTurns === 0) entity.attackReduction = 0; }
-    if (entity.speedBonusTurns > 0) { entity.speedBonusTurns--; if (entity.speedBonusTurns === 0) entity.speedBonus = 0; }
+    if (entity.attackReductionTurns > 0) {
+        entity.attackReductionTurns--;
+        if (entity.attackReductionTurns === 0) entity.attackReduction = 0;
+    }
+    if (entity.speedBonusTurns > 0) {
+        entity.speedBonusTurns--;
+        if (entity.speedBonusTurns === 0) entity.speedBonus = 0;
+    }
     if (entity.tauntTurns > 0) entity.tauntTurns--;
-    if (entity.blockTurns > 0) { entity.blockTurns--; if (entity.blockTurns === 0) entity.blockBonus = 0; }
-    if (entity.feintTurns > 0) { entity.feintTurns--; if (entity.feintTurns === 0) entity.feintBonus = 0; }
-    if (entity.speedReductionTurns > 0) { entity.speedReductionTurns--; if (entity.speedReductionTurns === 0) entity.speedReduction = 0; }
+    if (entity.blockTurns > 0) {
+        entity.blockTurns--;
+        if (entity.blockTurns === 0) entity.blockBonus = 0;
+    }
+    if (entity.feintTurns > 0) {
+        entity.feintTurns--;
+        if (entity.feintTurns === 0) entity.feintBonus = 0;
+    }
+    if (entity.speedReductionTurns > 0) {
+        entity.speedReductionTurns--;
+        if (entity.speedReductionTurns === 0) entity.speedReduction = 0;
+    }
 }
 
 function endBattle() {
@@ -1029,6 +1094,8 @@ function endBattle() {
     combatState.active = false;
     combatState.currentEnemy = null;
     combatState.log = [];
+    gameState.poisonStacks = [];
+    gameState.bleedStacks = []; // NEW: Clear bleed stacks
     hideCombatMenu();
 
     gameState.gold += enemy.goldReward;
@@ -1078,6 +1145,8 @@ function gameOver() {
     combatState.active = false;
     combatState.currentEnemy = null;
     combatState.log = [];
+    gameState.poisonStacks = [];
+    gameState.bleedStacks = []; // NEW: Clear bleed stacks
     hideCombatMenu();
     showAction("You have been defeated!");
     setTimeout(() => window.location.href = "gameover.html", 2000);
@@ -1158,7 +1227,6 @@ function updateShopUI() {
     if (sellList) {
         sellList.innerHTML = gameState.inventory.map(item => {
             const data = equipment[item.name] || items[item.name] || {};
-            // Use sellPrice if defined, else price/2, else 1 as fallback
             const sellPrice = data.sellPrice !== undefined 
                 ? data.sellPrice 
                 : (data.price !== undefined ? Math.floor(data.price / 2) : 1);
