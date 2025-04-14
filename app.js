@@ -26,7 +26,7 @@ let gameState = {
     equipped: { weapon: null, armor: null },
     ability: null,
     poisonStacks: [],
-    bleedStacks: [] // NEW: Track bleed stacks for player
+    bleedStacks: []
 };
 
 let combatState = {
@@ -88,7 +88,12 @@ const enemies = {
         xpReward: 20,
         image: "/assets/img_folder/enemies/bandit.jpeg",
         damage: "1d4",
-        ability: "steal",
+        weapon: "shortSword",
+        abilities: [
+            { name: "slash", weight: 50 },
+            { name: "kick", weight: 30 },
+            { name: "taunt", weight: 20 }
+        ],
         loot: { common: ["wolfPelt", 50], rare: ["dagger", 10] }
     },
     wolves: {
@@ -99,7 +104,12 @@ const enemies = {
         xpReward: 25,
         image: "/assets/img_folder/enemies/wolves.jpg",
         damage: "1d6",
-        ability: "bite",
+        weapon: null,
+        abilities: [
+            { name: "bite", weight: 50 },
+            { name: "venomousSpit", weight: 30 },
+            { name: "howl", weight: 20 }
+        ],
         loot: { common: ["wolfPelt", 80], rare: ["cloak", 5] }
     },
     thief: {
@@ -110,7 +120,12 @@ const enemies = {
         xpReward: 15,
         image: "/assets/img_folder/enemies/thief.jpg",
         damage: "1d4",
-        ability: "evade",
+        weapon: "dagger",
+        abilities: [
+            { name: "stab", weight: 50 },
+            { name: "evade", weight: 30 },
+            { name: "steal", weight: 20 }
+        ],
         loot: { common: ["raregem", 40], rare: ["swiftBoots", 8] }
     },
     trickster: {
@@ -121,7 +136,12 @@ const enemies = {
         xpReward: 20,
         image: "/assets/img_folder/enemies/trickster.jpg",
         damage: "1d4",
-        ability: "feint",
+        weapon: "dagger",
+        abilities: [
+            { name: "stab", weight: 50 },
+            { name: "feint", weight: 30 },
+            { name: "pocketSand", weight: 20 }
+        ],
         loot: { common: ["pocketSand", 60], rare: ["sharpeningStone", 15] }
     },
     bountyHunter: {
@@ -132,10 +152,15 @@ const enemies = {
         xpReward: 35,
         image: "/assets/img_folder/enemies/bountyHunter.jpg",
         damage: "1d8",
-        ability: "bash",
+        weapon: "bow",
+        abilities: [
+            { name: "cripplingShot", weight: 40 },
+            { name: "bash", weight: 30 },
+            { name: "rally", weight: 30 }
+        ],
         loot: { common: ["wolfpelt", 50], rare: ["shortSword", 20] }
     },
-    banditScout: {
+    /* banditScout: {
         name: "Bandit Scout",
         hp: 10,
         stats: { attack: 2, speed: 5, defense: 1 },
@@ -143,7 +168,12 @@ const enemies = {
         xpReward: 25,
         image: "/assets/img_folder/enemies/banditScout.jpg",
         damage: "1d6",
-        ability: "ambush",
+        weapon: "bow",
+        abilities: [
+            { name: "lunge", weight: 50 },
+            { name: "ambush", weight: 30 },
+            { name: "kick", weight: 20 }
+        ],
         loot: { common: ["wolfpelt", 50], rare: ["cloak", 10] }
     },
     banditBrute: {
@@ -154,7 +184,12 @@ const enemies = {
         xpReward: 30,
         image: "/assets/img_folder/enemies/banditBrute.jpg",
         damage: "1d8",
-        ability: "charge",
+        weapon: "longsword",
+        abilities: [
+            { name: "charge", weight: 50 },
+            { name: "bash", weight: 30 },
+            { name: "rally", weight: 20 }
+        ],
         loot: { common: ["wolfpelt", 50], rare: ["chainmail", 10] }
     },
     banditSniper: {
@@ -165,7 +200,12 @@ const enemies = {
         xpReward: 25,
         image: "/assets/img_folder/enemies/banditSniper.jpg",
         damage: "1d6",
-        ability: "lunge",
+        weapon: "bow",
+        abilities: [
+            { name: "cripplingShot", weight: 40 },
+            { name: "lunge", weight: 40 },
+            { name: "evade", weight: 20 }
+        ],
         loot: { common: ["bomb", 40], rare: ["bow", 15] }
     },
     banditThug: {
@@ -176,7 +216,12 @@ const enemies = {
         xpReward: 20,
         image: "/assets/img_folder/enemies/banditThug.jpg",
         damage: "1d6",
-        ability: "bash",
+        weapon: "shortSword",
+        abilities: [
+            { name: "bash", weight: 50 },
+            { name: "kick", weight: 30 },
+            { name: "taunt", weight: 20 }
+        ],
         loot: { common: ["wolfpelt", 50], rare: ["leatherArmor", 10] }
     },
     banditRogue: {
@@ -187,9 +232,14 @@ const enemies = {
         xpReward: 25,
         image: "/assets/img_folder/enemies/banditRogue.jpg",
         damage: "1d4",
-        ability: "disarm",
-        loot: { common: ["dagger", 60], rare: ["swiftBoots", 15] }
-    },
+        weapon: "dagger",
+        abilities: [
+            { name: "stab", weight: 50 },
+            { name: "disarm", weight: 30 },
+            { name: "evade", weight: 20 }
+        ],
+        loot: { common: ["throwingKnife", 60], rare: ["swiftBoots", 15] } // NEW: Added throwingKnife to loot
+    }, */
     hoshithesloth: {
         name: "hoshiTheSloth",
         hp: 50,
@@ -198,8 +248,15 @@ const enemies = {
         xpReward: 50,
         image: "/assets/img_folder/enemies/hoshithesloth.jpg",
         damage: "1d10",
-        ability: "evade",
-        loot: { common: [{ item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }], rare: [{ item: "dagger", chance: 10 }] }
+        weapon: "dagger",
+        abilities: [
+            { name: "stab", weight: 40 },
+            { name: "evade", weight: 40 }
+        ],
+        loot: { 
+            common: [{ item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }, { item: "campRations", chance: 50 }], 
+            rare: [{ item: "throwingKnife", chance: 10 }] // NEW: Added throwingKnife
+        }
     },
     valontheimmortal: {
         name: "valonTheImmortal",
@@ -209,8 +266,13 @@ const enemies = {
         xpReward: 50,
         image: "/assets/img_folder/enemies/valontheimmortal.jpg",
         damage: "1d10",
-        ability: "block",
-        loot: { common: [{ item: "chainmail", chance: 50 }], rare: [{ item: "dagger", chance: 10 }] }
+        weapon: "longsword",
+        abilities: [
+            { name: "charge", weight: 40 },
+            { name: "block", weight: 40 },
+            { name: "rally", weight: 20 }
+        ],
+        loot: { common: [{ item: "chainmail", chance: 50 }], rare: [{ item: "throwingKnife", chance: 10 }] } // NEW: Added throwingKnife
     },
     dirtydave: {
         name: "dirtyDave",
@@ -220,9 +282,19 @@ const enemies = {
         xpReward: 50,
         image: "/assets/img_folder/enemies/dirtydave.jpg",
         damage: "1d10",
-        ability: "slash",
-        loot: { common: [{ item: "dagger", chance: 50 }, { item: "pocketSand", chance: 50 }, { item: "silverRing", chance: 50 }], rare: [{ item: "dagger", chance: 10 }] }
-    },
+        weapon: "dagger",
+        abilities: [
+            { name: "slash", weight: 40 },
+            { name: "evade", weight: 20 }
+        ],
+        loot: { 
+            common: [{ item: "dagger", chance: 50 }, { item: "pocketSand", chance: 50 }, { item: "silverRing", chance: 50 }], 
+            rare: [{ item: "throwingKnife", chance: 10 }] // NEW: Added throwingKnife
+        }
+    }
+};
+
+const boss = {
     banditKing: {
         name: "Bandit King",
         hp: 50,
@@ -231,10 +303,14 @@ const enemies = {
         xpReward: 150,
         image: "/assets/img_folder/enemies/banditKing.jpeg",
         damage: "1d10",
-        ability: "intimidate",
+        weapon: "longsword",
+        abilities: [
+            { name: "charge", weight: 40 },
+            { name: "rally", weight: 30 }
+        ],
         loot: { common: ["wolfpelt", 80], rare: ["longsword", 50] }
     }
-};
+}
 
 const equipment = {
     shortSword: { type: "weapon", damage: "1d6", attack: 1, defense: 0, speed: 0, price: 20 },
@@ -246,7 +322,7 @@ const equipment = {
         defense: 0, 
         speed: 2, 
         price: 15, 
-        bleedChance: 30 // NEW: 30% chance to apply bleed on hit
+        bleedChance: 30 
     },
     bow: { type: "weapon", damage: "1d6", attack: 1, defense: 0, speed: 1, price: 25 },
     leatherArmor: { type: "armor", attack: 0, defense: 2, speed: 0, price: 30 },
@@ -317,7 +393,21 @@ const items = {
         price: 5
     },
     wolfPelt: { effect: () => "A pelt from a wolf—good for trading.", price: 0, sellPrice: 8 },
-    rareGem: { effect: () => "A valuable gemstone—rare and precious.", price: 0, sellPrice: 50 }
+    rareGem: { effect: () => "A valuable gemstone—rare and precious.", price: 0, sellPrice: 50 },
+    // NEW: Throwing Knife item
+    throwingKnife: {
+        effect: (user, target) => {
+            const dmg = rollDamage("1d4");
+            target.hp -= dmg;
+            if (target.bleedStacks.length < 3) {
+                target.bleedStacks.push({ damage: 3, turns: 3 });
+                return `${user.playerName} throws a sy throwingKnife for ${dmg} damage, causing ${target.name} to bleed (${target.bleedStacks.length}/3)!`;
+            }
+            return `${user.playerName} throws a Throwing Knife for ${dmg} damage, but ${target.name} is already at max bleed stacks!`;
+        },
+        price: 20,
+        sellPrice: 10
+    }
 };
 
 const enemyAbilities = {
@@ -402,7 +492,7 @@ const enemyAbilities = {
         return `${user.name} prepares to block (-2 damage taken this turn)!`;
     },
     counter: (user, target) => {
-        const dmg = rollDamage("1d4");
+        const dmg = rollDice(4);
         target.hp -= dmg;
         return `${user.name} counters for ${dmg} damage!`;
     },
@@ -448,6 +538,48 @@ const enemyAbilities = {
         target.hp -= dmg;
         if (rollDice(100) <= 15) target.blindTurns = 1;
         return `${user.name} gouges for ${dmg} damage${target.blindTurns > 0 ? " and blinds you!" : ""}!`;
+    },
+    stab: (user, target) => {
+        const dmg = rollDamage(user.damage) + user.stats.attack;
+        target.hp -= dmg;
+        return `${user.name} stabs for ${dmg} damage!`;
+    },
+    kick: (user, target) => {
+        const dmg = rollDice(4);
+        target.hp -= dmg;
+        if (rollDice(100) <= 25) {
+            target.speedReduction = 1;
+            target.speedReductionTurns = 2;
+            return `${user.name} kicks you for ${dmg} damage and slows you!`;
+        }
+        return `${user.name} kicks you for ${dmg} damage!`;
+    },
+    pocketSand: (user, target) => {
+        target.blindTurns = 1;
+        return `${user.name} throws pocket sand, distracting you!`;
+    },
+    cripplingShot: (user, target) => {
+        const dmg = rollDamage("1d6") + user.stats.attack;
+        target.hp -= dmg;
+        if (rollDice(100) <= 20 && target.bleedStacks.length < 3) {
+            target.bleedStacks.push({ damage: 3, turns: 3 });
+            return `${user.name} fires a crippling shot for ${dmg} damage, causing you to bleed (${target.bleedStacks.length}/3)!`;
+        }
+        return `${user.name} fires a crippling shot for ${dmg} damage!`;
+    },
+    venomousSpit: (user, target) => {
+        const dmg = rollDice(4);
+        target.hp -= dmg;
+        if (target.poisonStacks.length < 5) {
+            target.poisonStacks.push(1);
+            return `${user.name} spits venom for ${dmg} damage, poisoning you (${target.poisonStacks.length}/5)!`;
+        }
+        return `${user.name} spits venom for ${dmg} damage!`;
+    },
+    rally: (user) => {
+        user.attackBonus = (user.attackBonus || 0) + 2;
+        user.attackBonusTurns = 2;
+        return `${user.name} rallies, gaining +2 attack for 2 turns!`;
     }
 };
 
@@ -502,7 +634,6 @@ function loadPlayerData() {
             gameState.stats.speed += levelBonusCount * bonuses.speed;
             gameState.ability = classes[gameState.class].ability;
         }
-        // NEW: Ensure bleedStacks exists
         if (!gameState.bleedStacks) gameState.bleedStacks = [];
         if (!gameState.poisonStacks) gameState.poisonStacks = [];
     }
@@ -513,7 +644,9 @@ function calculateAC(entity) {
     const baseAC = entity.baseAC || 10;
     const speedBonus = Math.floor(((entity.stats.speed || 0) + (entity.speedBonus || 0)) / 3);
     const defenseBonus = Math.floor((entity.stats.defense || 0) / 2);
-    const equipBonus = (entity.equipped?.weapon?.defense || 0) + (entity.equipped?.armor?.defense || 0) + (entity.evadeTurns > 0 ? 2 : 0);
+    const equipBonus = (entity.equipped?.weapon?.defense || 0) + 
+                       (entity.equipped?.armor?.defense || 0) + 
+                       (entity.evadeTurns > 0 ? 2 : 0);
     const ac = baseAC + speedBonus + defenseBonus + equipBonus;
     console.log(`${entity.playerName || entity.name || "Player"} AC: ${ac}`);
     return ac;
@@ -786,7 +919,7 @@ function startBattle(enemyType) {
             gameState.gold += goldGain;
             message = `You discover a lost pouch with ${goldGain} gold!`;
         } else {
-            const item = ["healingPotion", "sharpeningStone", "campRations"][rollDice(3) - 1];
+            const item = ["healingPotion", "sharpeningStone", "throwingKnife"][rollDice(3) - 1]; // NEW: Added throwingKnife to positive loot
             addToInventory(item);
             message = `You stumble upon a ${item}!`;
         }
@@ -803,8 +936,9 @@ function startBattle(enemyType) {
             ...enemies[enemyType],
             enemyType: enemyType,
             ac: calculateAC(enemies[enemyType]),
+            equipped: { weapon: enemies[enemyType].weapon ? { ...equipment[enemies[enemyType].weapon], name: enemies[enemyType].weapon } : null },
             poisonStacks: [],
-            bleedStacks: [], // NEW: Track bleed stacks for enemy
+            bleedStacks: [],
             trapTurns: 0,
             blindTurns: 0,
             evadeTurns: 0,
@@ -821,8 +955,20 @@ function startBattle(enemyType) {
             feintBonus: 0,
             feintTurns: 0,
             speedReduction: 0,
-            speedReductionTurns: 0
+            speedReductionTurns: 0,
+            attackBonus: 0,
+            attackBonusTurns: 0,
+            abilityCooldowns: {}
         };
+        combatState.currentEnemy.abilities.forEach(ability => {
+            combatState.currentEnemy.abilityCooldowns[ability.name] = 0;
+        });
+        if (combatState.currentEnemy.equipped?.weapon) {
+            const weapon = combatState.currentEnemy.equipped.weapon;
+            combatState.currentEnemy.stats.attack += weapon.attack || 0;
+            combatState.currentEnemy.stats.defense += weapon.defense || 0;
+            combatState.currentEnemy.stats.speed += weapon.speed || 0;
+        }
         gameState.ac = calculateAC(gameState);
         combatState.active = true;
         combatState.turn = "player";
@@ -953,7 +1099,9 @@ function performAttack(attacker, target) {
     const stats = {
         ...attacker.stats,
         attack: (attacker.sharpenTurns > 0 ? attacker.stats.attack + 2 : attacker.stats.attack) -
-                (attacker.attackReduction || 0) + (attacker.frenzyBonus || 0)
+                (attacker.attackReduction || 0) + 
+                (attacker.frenzyBonus || 0) + 
+                (attacker.attackBonus || 0)
     };
     const weapon = attacker.equipped?.weapon || { damage: "1d4" };
     const attackRoll = rollDice(20) + stats.attack + (attacker.feintBonus || 0);
@@ -968,9 +1116,8 @@ function performAttack(attacker, target) {
         damage = Math.max(1, damage - reduction);
         target.hp -= damage;
 
-        // NEW: Apply bleed if attacker is player with dagger
         let bleedMessage = "";
-        if (attacker.playerName && weapon.name === "dagger" && target.bleedStacks.length < 3 && rollDice(100) <= weapon.bleedChance) {
+        if (weapon.bleedChance && target.bleedStacks.length < 3 && rollDice(100) <= weapon.bleedChance) {
             target.bleedStacks.push({ damage: 3, turns: 3 });
             bleedMessage = ` and causes ${targetName} to bleed (${target.bleedStacks.length}/3)!`;
         }
@@ -985,7 +1132,7 @@ function runAway() {
     const damage = rollDice(4);
     gameState.hp -= damage;
     gameState.poisonStacks = [];
-    gameState.bleedStacks = []; // NEW: Clear bleed stacks
+    gameState.bleedStacks = [];
     showAction(`You try to flee but take ${damage} damage from ${combatState.currentEnemy.name}!`);
     updateUI();
     savePlayerData();
@@ -1008,13 +1155,34 @@ function enemyTurn() {
     let message = "";
     if (enemy.stunTurns > 0) {
         message = `${enemy.name} is stunned and cannot act!`;
-    } else if (rollDice(2) === 1 && enemyAbilities[enemy.ability]) {
-        message = enemyAbilities[enemy.ability](enemy, gameState);
-        if (enemy.ability === "sneak" && enemy.hp === enemies[enemy.name.toLowerCase()].hp) {
-            enemy.hp--;
-        }
     } else {
-        message = performAttack(enemy, gameState);
+        const hpRatio = enemy.hp / enemies[enemy.enemyType].hp;
+        const availableAbilities = enemy.abilities.filter(
+            ability => (enemy.abilityCooldowns[ability.name] || 0) === 0
+        );
+        let ability;
+        if (hpRatio < 0.3 && availableAbilities.some(a => ["evade", "block", "rally"].includes(a.name))) {
+            ability = availableAbilities.find(a => ["evade", "block", "rally"].includes(a.name)) ||
+                     availableAbilities[rollDice(availableAbilities.length) - 1];
+        } else {
+            const totalWeight = availableAbilities.reduce((sum, a) => sum + a.weight, 0);
+            let roll = rollDice(totalWeight);
+            ability = availableAbilities.find(a => {
+                roll -= a.weight;
+                return roll <= 0;
+            }) || availableAbilities[0];
+        }
+
+        const abilityFunction = enemyAbilities[ability.name];
+        if (["venomousSpit", "cripplingShot", "rally"].includes(ability.name)) {
+            enemy.abilityCooldowns[ability.name] = 2;
+        }
+
+        message = abilityFunction(enemy, gameState);
+
+        Object.keys(enemy.abilityCooldowns).forEach(key => {
+            if (enemy.abilityCooldowns[key] > 0) enemy.abilityCooldowns[key]--;
+        });
     }
     showAction(message);
     updateUI();
@@ -1046,7 +1214,6 @@ function updateEffects(entity) {
         const entityName = entity.playerName || entity.name || "Unknown";
         showAction(`${entityName} takes ${totalPoisonDamage} damage from ${entity.poisonStacks.length} poison stack${entity.poisonStacks.length > 1 ? "s" : ""}!`);
     }
-    // NEW: Process bleed stacks
     if (entity.bleedStacks.length > 0) {
         let totalBleedDamage = 0;
         entity.bleedStacks = entity.bleedStacks.filter(stack => stack.turns > 0).map(stack => {
@@ -1087,6 +1254,10 @@ function updateEffects(entity) {
         entity.speedReductionTurns--;
         if (entity.speedReductionTurns === 0) entity.speedReduction = 0;
     }
+    if (entity.attackBonusTurns > 0) {
+        entity.attackBonusTurns--;
+        if (entity.attackBonusTurns === 0) entity.attackBonus = 0;
+    }
 }
 
 function endBattle() {
@@ -1095,7 +1266,7 @@ function endBattle() {
     combatState.currentEnemy = null;
     combatState.log = [];
     gameState.poisonStacks = [];
-    gameState.bleedStacks = []; // NEW: Clear bleed stacks
+    gameState.bleedStacks = [];
     hideCombatMenu();
 
     gameState.gold += enemy.goldReward;
@@ -1104,8 +1275,13 @@ function endBattle() {
 
     const commonRoll = rollDice(100);
     const rareRoll = rollDice(100);
+    const weaponRoll = rollDice(100);
     if (commonRoll <= enemy.loot.common[1]) addToInventory(enemy.loot.common[0]);
     if (rareRoll <= enemy.loot.rare[1]) addToInventory(enemy.loot.rare[0]);
+    if (enemy.equipped?.weapon && weaponRoll <= 10) {
+        addToInventory(enemy.equipped.weapon.name);
+        summary += `\nDropped: ${enemy.equipped.weapon.name}`;
+    }
     if (commonRoll <= enemy.loot.common[1] || rareRoll <= enemy.loot.rare[1]) {
         summary += `\nLoot: ${commonRoll <= enemy.loot.common[1] ? enemy.loot.common[0] : ""}${commonRoll <= enemy.loot.common[1] && rareRoll <= enemy.loot.rare[1] ? ", " : ""}${rareRoll <= enemy.loot.rare[1] ? enemy.loot.rare[0] : ""}`;
     }
@@ -1146,7 +1322,7 @@ function gameOver() {
     combatState.currentEnemy = null;
     combatState.log = [];
     gameState.poisonStacks = [];
-    gameState.bleedStacks = []; // NEW: Clear bleed stacks
+    gameState.bleedStacks = [];
     hideCombatMenu();
     showAction("You have been defeated!");
     setTimeout(() => window.location.href = "gameover.html", 2000);
@@ -1330,12 +1506,12 @@ document.addEventListener("DOMContentLoaded", () => {
             } else if (roll === 19) {
                 const specialRoll = rollDice(6);
                 enemyType = [
-                    "banditScout",
-                    "banditBrute",
-                    "banditSniper",
-                    "banditThug",
-                    "banditRogue",
-                    "banditLeader",
+                    //"banditScout",
+                    //"banditBrute",
+                    //"banditSniper",
+                    //"banditThug",
+                    //"banditRogue",
+                    //"banditLeader",
                     "valonTheImmortal",
                     "dirtyDave",
                     "hoshiTheSloth"
