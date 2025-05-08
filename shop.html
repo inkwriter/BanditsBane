@@ -34,17 +34,26 @@
           </div>
         </div>
       </div>
-      <div>
+      <div class="shop-image">
         <img src="/assets/img_folder/backgrounds/shop.jpeg" id="shop" alt="Shop Background">
       </div>
-      <div id="actionBox" class="hidden" style="height: 150px; overflow-y: auto;"></div>
+      <div id="actionBox" style="height: 150px; overflow-y: auto;"></div>
       <div id="shopContainer">
-        <div id="buyList" class="shop-list"></div>
-        <div id="sellList" class="shop-list hidden"></div>
+        <div class="shop-tabs">
+          <button id="weaponTab" class="shop-tab active" data-tab="weaponList">Weapons</button>
+          <button id="armorTab" class="shop-tab" data-tab="armorList">Armor</button>
+          <button id="useableTab" class="shop-tab" data-tab="useableList">Useable</button>
+          <button id="sellTab" class="shop-tab" data-tab="sellList">Sell</button>
+        </div>
+        <div id="shopMenus">
+          <div id="weaponList" class="shop-list"></div>
+          <div id="armorList" class="shop-list hidden"></div>
+          <div id="useableList" class="shop-list hidden"></div>
+          <div id="sellList" class="shop-list hidden"></div>
+        </div>
       </div>
       <div class="buttons">
-        <button id="sellBtn">SELL ITEMS</button>
-        <button id="returnBtn">RETURN TO CAMP</button>
+        <button id="returnBtn">TO CAMP</button>
       </div>
     </div>
     <script src="/app.js"></script>

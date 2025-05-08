@@ -25,6 +25,7 @@ let gameState = {
     ],
     equipped: { weapon: null, armor: null },
     ability: null,
+    abilityCooldown: 0, // NEW: Added for ability cooldowns
     poisonStacks: [],
     bleedStacks: []
 };
@@ -45,6 +46,7 @@ const classes = {
         levelUpBonuses: { attack: 2, defense: 1, speed: 0 },
         ability: {
             name: "Cleave",
+            cooldown: 2, // NEW: Added cooldown
             effect: (user, target) => {
                 const dmg = rollDamage("1d10") + user.stats.attack;
                 target.hp -= dmg;
@@ -57,6 +59,7 @@ const classes = {
         levelUpBonuses: { attack: 1, defense: 0, speed: 2 },
         ability: {
             name: "Backstab",
+            cooldown: 2, // NEW: Added cooldown
             effect: (user, target) => {
                 const dmg = rollDamage("1d6") + user.stats.attack + 2;
                 target.hp -= dmg;
@@ -69,6 +72,7 @@ const classes = {
         levelUpBonuses: { attack: 1, defense: 2, speed: 0 },
         ability: {
             name: "Shield Bash",
+            cooldown: 2, // NEW: Added cooldown
             effect: (user, target) => {
                 const dmg = rollDamage("1d6") + user.stats.attack;
                 target.hp -= dmg;
@@ -310,7 +314,7 @@ const boss = {
         ],
         loot: { common: ["wolfpelt", 80], rare: ["longsword", 50] }
     }
-}
+};
 
 const equipment = {
     shortSword: { type: "weapon", damage: "1d6", attack: 1, defense: 0, speed: 0, price: 20 },
@@ -401,7 +405,7 @@ const items = {
             target.hp -= dmg;
             if (target.bleedStacks.length < 3) {
                 target.bleedStacks.push({ damage: 3, turns: 3 });
-                return `${user.playerName} throws a sy throwingKnife for ${dmg} damage, causing ${target.name} to bleed (${target.bleedStacks.length}/3)!`;
+                return `${user.playerName} throws a throwingKnife for ${dmg} damage, causing ${target.name} to bleed (${target.bleedStacks.length}/3)!`; // Fixed typo: "sy throwingKnife"
             }
             return `${user.playerName} throws a Throwing Knife for ${dmg} damage, but ${target.name} is already at max bleed stacks!`;
         },
@@ -636,6 +640,7 @@ function loadPlayerData() {
         }
         if (!gameState.bleedStacks) gameState.bleedStacks = [];
         if (!gameState.poisonStacks) gameState.poisonStacks = [];
+        if (!gameState.abilityCooldown) gameState.abilityCooldown = 0; // NEW: Initialize cooldown
     }
     console.log("Loaded stats:", gameState.stats);
 }
@@ -710,7 +715,10 @@ function equipItem(itemName, type) {
 
 function unequipItem(type) {
     const current = gameState.equipped[type];
-    if (!current) return;
+    if (!current) {
+        showAction(`No ${type} equipped to unequip!`);
+        return;
+    }
 
     gameState.stats.attack -= current.attack || 0;
     gameState.stats.defense -= current.defense || 0;
@@ -775,9 +783,9 @@ function updateUI() {
         const enemyHealthBar = document.getElementById("enemy-health");
         if (enemyHealthBar) {
             const enemyKey = combatState.currentEnemy.enemyType || combatState.currentEnemy.name.toLowerCase();
-            const enemyData = enemies[enemyKey];
+            const enemyData = enemies[enemyKey] || boss[enemyKey]; // FIXED: Added boss lookup
             if (!enemyData) {
-                console.error("Enemy not found in enemies object:", enemyKey, combatState.currentEnemy);
+                console.error("Enemy not found in enemies or boss object:", enemyKey, combatState.currentEnemy);
                 return;
             }
             const maxHp = enemyData.hp;
@@ -802,7 +810,10 @@ function showAction(text) {
 
 function showEquipMenu() {
     const equipMenu = document.getElementById("equipMenu");
-    if (!equipMenu) return;
+    if (!equipMenu) {
+        console.error("Equip menu not found");
+        return;
+    }
 
     const weapons = gameState.inventory.filter(item => equipment[item.name]?.type === "weapon");
     const armors = gameState.inventory.filter(item => equipment[item.name]?.type === "armor");
@@ -858,13 +869,14 @@ function showEquipMenu() {
 
     equipMenu.classList.remove("hidden");
 
+    // Attach listeners without { once: true }
     document.querySelectorAll(".equipBtn").forEach(btn => {
         btn.addEventListener("click", () => {
             const itemName = btn.dataset.item;
             const type = btn.dataset.type;
             equipItem(itemName, type);
             showEquipMenu();
-        }, { once: true });
+        });
     });
 
     document.querySelectorAll(".unequipBtn").forEach(btn => {
@@ -873,13 +885,16 @@ function showEquipMenu() {
             const type = btn.dataset.type;
             unequipItem(type);
             showEquipMenu();
-        }, { once: true });
+        });
     });
 
-    document.getElementById("backBtn").addEventListener("click", () => {
-        equipMenu.classList.add("hidden");
-        showAction("You’re back at camp.");
-    }, { once: true });
+    const backBtn = document.getElementById("backBtn");
+    if (backBtn) {
+        backBtn.addEventListener("click", () => {
+            equipMenu.classList.add("hidden");
+            showAction("You’re back at camp.");
+        });
+    }
 
     console.log("showEquipMenu - gameState.equipped:", gameState.equipped);
 }
@@ -928,15 +943,17 @@ function startBattle(enemyType) {
         savePlayerData();
         return;
     } else {
-        if (!enemies[enemyType]) {
+        const enemyData = enemies[enemyType] || boss[enemyType]; // FIXED: Added boss lookup
+        if (!enemyData) {
             console.error("Invalid enemy type:", enemyType);
+            showAction("Error: Enemy not found!");
             return;
         }
         combatState.currentEnemy = {
-            ...enemies[enemyType],
+            ...enemyData,
             enemyType: enemyType,
-            ac: calculateAC(enemies[enemyType]),
-            equipped: { weapon: enemies[enemyType].weapon ? { ...equipment[enemies[enemyType].weapon], name: enemies[enemyType].weapon } : null },
+            ac: calculateAC(enemyData),
+            equipped: { weapon: enemyData.weapon ? { ...equipment[enemyData.weapon], name: enemyData.weapon } : null },
             poisonStacks: [],
             bleedStacks: [],
             trapTurns: 0,
@@ -995,7 +1012,7 @@ function startBattle(enemyType) {
 
         const banditEnemyImg = document.getElementById("banditEnemy");
         if (banditEnemyImg) {
-            banditEnemyImg.src = enemies[enemyType].image;
+            banditEnemyImg.src = enemyData.image;
             banditEnemyImg.classList.remove("hidden");
         }
 
@@ -1005,38 +1022,58 @@ function startBattle(enemyType) {
 
 function showCombatMenu(disableRun = false) {
     const combatMenu = document.getElementById("combatMenu");
-    if (!combatMenu) return;
+    if (!combatMenu) {
+        console.error("Combat menu not found");
+        return;
+    }
     const isAmbush = window.location.pathname.includes("ambush.html");
     combatMenu.innerHTML = `
         <button id="attackOption">Attack</button>
-        <button id="abilityOption">${gameState.ability?.name || "Ability"}</button>
+        <button id="abilityOption">${gameState.ability?.name || "Ability"} ${gameState.abilityCooldown > 0 ? `(${gameState.abilityCooldown})` : ""}</button>
         <button id="itemOption">Item</button>
         ${!isAmbush && !disableRun ? '<button id="runOption">Run</button>' : ''}
     `;
     combatMenu.classList.remove("hidden");
-    document.getElementById("attackOption")?.addEventListener("click", () => playerAction("attack"), { once: true });
-    document.getElementById("abilityOption")?.addEventListener("click", () => playerAction("ability"), { once: true });
-    document.getElementById("itemOption")?.addEventListener("click", showItemMenu, { once: true });
-    if (!isAmbush && !disableRun) document.getElementById("runOption")?.addEventListener("click", () => playerAction("run"), { once: true });
-    document.getElementById("viewLogOption")?.addEventListener("click", showCombatLog, { once: true });
+
+    // Attach listeners without { once: true }
+    const attackBtn = document.getElementById("attackOption");
+    if (attackBtn) attackBtn.addEventListener("click", () => playerAction("attack"));
+
+    const abilityBtn = document.getElementById("abilityOption");
+    if (abilityBtn) abilityBtn.addEventListener("click", () => playerAction("ability"));
+
+    const itemBtn = document.getElementById("itemOption");
+    if (itemBtn) itemBtn.addEventListener("click", showItemMenu);
+
+    if (!isAmbush && !disableRun) {
+        const runBtn = document.getElementById("runOption");
+        if (runBtn) runBtn.addEventListener("click", () => playerAction("run"));
+    }
+
+    const logBtn = document.getElementById("viewLogOption");
+    if (logBtn) logBtn.addEventListener("click", showCombatLog);
 }
 
 function showItemMenu() {
     const combatMenu = document.getElementById("combatMenu");
-    if (!combatMenu) return;
+    if (!combatMenu) {
+        console.error("Combat menu not found");
+        return;
+    }
 
-    const consumableItems = gameState.inventory.filter(item => items[item.name] && !equipment[item.name]);
+    const useableItems = gameState.inventory.filter(item => items[item.name] && !equipment[item.name]);
 
-    combatMenu.innerHTML = consumableItems.length > 0 
-        ? consumableItems.map(item => `
+    combatMenu.innerHTML = useableItems.length > 0 
+        ? useableItems.map(item => `
             <button class="itemOption" data-item="${item.name}">${item.name} (${item.quantity})</button>
         `).join("") + `<button id="backOption">Back</button>`
         : `<p>No usable items available!</p><button id="backOption">Back</button>`;
 
     document.querySelectorAll(".itemOption").forEach(button => {
-        button.addEventListener("click", () => playerAction("item", button.dataset.item), { once: true });
+        button.addEventListener("click", () => playerAction("item", button.dataset.item));
     });
-    document.getElementById("backOption")?.addEventListener("click", () => showCombatMenu(), { once: true });
+    const backBtn = document.getElementById("backOption");
+    if (backBtn) backBtn.addEventListener("click", () => showCombatMenu(combatState.currentEnemy?.name === "Bandit King"));
 }
 
 function showCombatLog() {
@@ -1054,7 +1091,7 @@ function showCombatLog() {
     } else {
         alert("Combat Log:\n" + logText);
     }
-    setTimeout(showCombatMenu, 100);
+    setTimeout(() => showCombatMenu(combatState.currentEnemy?.name === "Bandit King"), 100);
 }
 
 function playerAction(action, itemName = null) {
@@ -1072,7 +1109,15 @@ function playerAction(action, itemName = null) {
             message += `${i > 0 ? " Then, " : ""}${attackMessage} `;
         }
     } else if (action === "ability") {
+        if (gameState.abilityCooldown > 0) {
+            message = `${gameState.ability.name} is on cooldown! (${gameState.abilityCooldown} turn${gameState.abilityCooldown > 1 ? "s" : ""} remaining)`;
+            showAction(message);
+            updateUI();
+            setTimeout(() => showCombatMenu(combatState.currentEnemy?.name === "Bandit King"), 1000);
+            return;
+        }
         message = gameState.ability.effect(gameState, combatState.currentEnemy);
+        gameState.abilityCooldown = classes[gameState.class].ability.cooldown; // NEW: Set cooldown
     } else if (action === "item" && itemName) {
         message = useItem(itemName, gameState, combatState.currentEnemy) || `Can't use ${itemName} now!`;
     } else if (action === "run") {
@@ -1082,6 +1127,14 @@ function playerAction(action, itemName = null) {
     updateEffects(gameState);
     updateUI();
     savePlayerData();
+
+    // NEW: Decrement ability cooldown
+    if (gameState.abilityCooldown > 0) {
+        gameState.abilityCooldown--;
+        if (gameState.abilityCooldown === 0) {
+            showAction(`${gameState.ability.name} is ready to use again!`);
+        }
+    }
 
     if (combatState.currentEnemy && combatState.currentEnemy.hp <= 0) {
         endBattle();
@@ -1104,14 +1157,18 @@ function performAttack(attacker, target) {
                 (attacker.attackBonus || 0)
     };
     const weapon = attacker.equipped?.weapon || { damage: "1d4" };
-    const attackRoll = rollDice(20) + stats.attack + (attacker.feintBonus || 0);
+    const rawRoll = rollDice(20);
+    const attackRoll = rawRoll + stats.attack + (attacker.feintBonus || 0);
     const targetAC = target.ac;
     const name = attacker.playerName || attacker.name || "Unknown";
     const targetName = attacker.playerName ? target.name : target.playerName || "you";
 
     console.log(`${name} attacks: Roll=${attackRoll} vs AC=${targetAC}`);
-    if (target.blindTurns > 0 || attackRoll >= targetAC) {
-        let damage = rollDamage(weapon.damage) + stats.attack;
+    if (rawRoll === 20 || target.blindTurns > 0 || attackRoll >= targetAC) {
+        // NEW: Double damage dice on crit
+        let damage = rawRoll === 20
+            ? rollDamage(weapon.damage) * 2 + stats.attack // Double dice, then add attack
+            : rollDamage(weapon.damage) + stats.attack;
         const reduction = attacker.playerName ? (target.blockBonus || 0) : Math.floor(gameState.stats.defense / 2);
         damage = Math.max(1, damage - reduction);
         target.hp -= damage;
@@ -1123,7 +1180,7 @@ function performAttack(attacker, target) {
         }
 
         if (!attacker.playerName && enemyAbilities.counter) showAction(enemyAbilities.counter(target, attacker));
-        return `${name} hits ${targetName} for ${damage} damage${reduction > 0 ? ` (-${reduction})` : ""}${bleedMessage}!`;
+        return `${name} ${rawRoll === 20 ? "critically " : ""}hits ${targetName} for ${damage} damage${reduction > 0 ? ` (-${reduction})` : ""}${bleedMessage}!`;
     }
     return `${name} swings at ${targetName} but misses!`;
 }
@@ -1133,7 +1190,8 @@ function runAway() {
     gameState.hp -= damage;
     gameState.poisonStacks = [];
     gameState.bleedStacks = [];
-    showAction(`You try to flee but take ${damage} damage from ${combatState.currentEnemy.name}!`);
+    const message = `You try to flee but take ${damage} damage from ${combatState.currentEnemy.name}!`;
+    showAction(message);
     updateUI();
     savePlayerData();
     if (gameState.hp <= 0) gameOver();
@@ -1142,7 +1200,7 @@ function runAway() {
         combatState.currentEnemy = null;
         setTimeout(() => window.location.href = "exploration.html", 1000);
     }
-    return null;
+    return message; // FIXED: Return message instead of null
 }
 
 function enemyTurn() {
@@ -1156,7 +1214,8 @@ function enemyTurn() {
     if (enemy.stunTurns > 0) {
         message = `${enemy.name} is stunned and cannot act!`;
     } else {
-        const hpRatio = enemy.hp / enemies[enemy.enemyType].hp;
+        const enemyData = enemies[enemy.enemyType] || boss[enemy.enemyType]; // FIXED: Added boss lookup
+        const hpRatio = enemy.hp / enemyData.hp;
         const availableAbilities = enemy.abilities.filter(
             ability => (enemy.abilityCooldowns[ability.name] || 0) === 0
         );
@@ -1228,7 +1287,10 @@ function updateEffects(entity) {
     }
     if (entity.trapTurns > 0) {
         entity.trapTurns--;
-        if (entity.trapTurns === 0) entity.stats.speed = enemies[entity.name?.toLowerCase()]?.stats.speed || entity.stats.speed;
+        if (entity.trapTurns === 0) {
+            const enemyData = enemies[entity.name?.toLowerCase()] || boss[entity.name?.toLowerCase()];
+            entity.stats.speed = enemyData?.stats.speed || entity.stats.speed;
+        }
     }
     if (entity.blindTurns > 0) entity.blindTurns--;
     if (entity.evadeTurns > 0) entity.evadeTurns--;
@@ -1269,33 +1331,48 @@ function endBattle() {
     gameState.bleedStacks = [];
     hideCombatMenu();
 
-    gameState.gold += enemy.goldReward;
-    gameState.xp += enemy.xpReward;
-    let summary = `--- Battle Won! ---\nDefeated: ${enemy.name}\nRewards: +${enemy.goldReward} Gold, +${enemy.xpReward} XP`;
+    const enemyData = enemies[enemy.enemyType] || boss[enemy.enemyType]; // Correctly retrieves boss or enemy data
+    gameState.gold += enemyData.goldReward;
+    gameState.xp += enemyData.xpReward;
 
-    const commonRoll = rollDice(100);
-    const rareRoll = rollDice(100);
-    const weaponRoll = rollDice(100);
-    if (commonRoll <= enemy.loot.common[1]) addToInventory(enemy.loot.common[0]);
-    if (rareRoll <= enemy.loot.rare[1]) addToInventory(enemy.loot.rare[0]);
-    if (enemy.equipped?.weapon && weaponRoll <= 10) {
+    let summary = `--- Battle Won! ---\nDefeated: ${enemy.name}\nRewards: +${enemyData.goldReward} Gold, +${enemyData.xpReward} XP`;
+
+    // Loot handling
+    if (enemyData.loot) {
+        ['common', 'rare'].forEach(rarity => {
+            const lootList = enemyData.loot[rarity];
+            if (lootList) {
+                lootList.forEach(loot => {
+                    const chance = typeof loot === "object" ? loot.chance : lootList[1];
+                    const itemName = typeof loot === "object" ? loot.item : loot;
+                    if (rollDice(100) <= chance) {
+                        addToInventory(itemName);
+                        summary += `\nLoot: ${itemName}`;
+                    }
+                });
+            }
+        });
+    }
+
+    // Weapon drop
+    if (enemy.equipped?.weapon && rollDice(100) <= 10) {
         addToInventory(enemy.equipped.weapon.name);
         summary += `\nDropped: ${enemy.equipped.weapon.name}`;
     }
-    if (commonRoll <= enemy.loot.common[1] || rareRoll <= enemy.loot.rare[1]) {
-        summary += `\nLoot: ${commonRoll <= enemy.loot.common[1] ? enemy.loot.common[0] : ""}${commonRoll <= enemy.loot.common[1] && rareRoll <= enemy.loot.rare[1] ? ", " : ""}${rareRoll <= enemy.loot.rare[1] ? enemy.loot.rare[0] : ""}`;
-    }
 
-    if (enemy.name === "Bandit King") {
-        summary += "\nVictory! The Bandit King is defeated, and the forest is safe!";
+    // Check for Bandit King victory
+    if (enemy.enemyType === "banditKing") {
+        summary += `\n\n🏆 Victory! The Bandit King is defeated, and the forest is safe once more.`;
         showAction(summary);
         levelUp();
         savePlayerData();
         updateUI();
+        localStorage.setItem("victory", "true");
         setTimeout(() => window.location.href = "gameover.html", 2000);
         return;
     }
 
+    // Regular enemy wrap-up
     showAction(summary);
     levelUp();
     savePlayerData();
@@ -1325,6 +1402,7 @@ function gameOver() {
     gameState.bleedStacks = [];
     hideCombatMenu();
     showAction("You have been defeated!");
+    localStorage.setItem("victory", "false"); // NEW: Set defeat flag
     setTimeout(() => window.location.href = "gameover.html", 2000);
 }
 
@@ -1334,10 +1412,11 @@ function levelUp() {
     gameState.xp -= LEVEL_UP_XP;
     gameState.hp = Math.min(MAX_HP, gameState.hp + LEVEL_UP_HP_GAIN);
     gameState.maxHp = Math.min(MAX_HP, gameState.maxHp + LEVEL_UP_HP_GAIN);
-    gameState.stats.attack += 1;
-    gameState.stats.defense += 1;
-    gameState.stats.speed += 1;
-    alert("You leveled up!");
+    const bonuses = classes[gameState.class]?.levelUpBonuses || { attack: 1, defense: 1, speed: 1 };
+    gameState.stats.attack += bonuses.attack;
+    gameState.stats.defense += bonuses.defense;
+    gameState.stats.speed += bonuses.speed;
+    showAction(`Level Up! You are now level ${gameState.level}!`);
     savePlayerData();
     updateUI();
 }
@@ -1353,8 +1432,11 @@ function hideCombatMenu() {
 function handleBuyItem(itemName, price) {
     if (gameState.gold >= price) {
         gameState.gold -= price;
-        if (equipment[itemName]) equipItem(itemName) ? showAction(`Equipped ${itemName}!`) : addToInventory(itemName);
-        else addToInventory(itemName);
+        if (equipment[itemName]) {
+            equipItem(itemName, equipment[itemName].type) ? showAction(`Equipped ${itemName}!`) : addToInventory(itemName);
+        } else {
+            addToInventory(itemName);
+        }
         showAction(`Bought ${itemName} for ${price} Gold!`);
         savePlayerData();
         updateUI();
@@ -1382,41 +1464,76 @@ function handleSellItem(itemName) {
 }
 
 function updateShopUI() {
-    const buyList = document.getElementById("buyList");
+    const weaponList = document.getElementById("weaponList");
+    const armorList = document.getElementById("armorList");
+    const useableList = document.getElementById("useableList");
     const sellList = document.getElementById("sellList");
 
-    if (buyList) {
-        buyList.innerHTML = Object.keys({ ...equipment, ...items }).map(item => {
-            const data = equipment[item] || items[item];
-            return data.price ? `<p>${item}: ${data.price} Gold <button class="buyBtn" data-item="${item}">Buy</button></p>` : "";
-        }).join("");
-        const buyButtons = document.querySelectorAll(".buyBtn");
-        console.log("Buy buttons found:", buyButtons.length);
-        buyButtons.forEach(btn => {
-            btn.addEventListener("click", () => {
-                console.log("Buy clicked for:", btn.dataset.item);
-                handleBuyItem(btn.dataset.item, equipment[btn.dataset.item]?.price || items[btn.dataset.item].price);
-            }, { once: true });
-        });
+    // Populate weapon list
+    if (weaponList) {
+        weaponList.innerHTML = Object.keys(equipment)
+            .filter(item => equipment[item].type === "weapon")
+            .map(item => {
+                const data = equipment[item];
+                return `<p>${item}: ${data.price} Gold <button class="buyBtn" data-item="${item}">Buy</button></p>`;
+            })
+            .join("") || "<p>No weapons available.</p>";
     }
 
-    if (sellList) {
-        sellList.innerHTML = gameState.inventory.map(item => {
-            const data = equipment[item.name] || items[item.name] || {};
-            const sellPrice = data.sellPrice !== undefined 
-                ? data.sellPrice 
-                : (data.price !== undefined ? Math.floor(data.price / 2) : 1);
-            return `<p>${item.name} (${item.quantity}): ${sellPrice} Gold <button class="sellBtn" data-item="${item.name}">Sell</button></p>`;
-        }).join("");
-        const sellButtons = document.querySelectorAll(".sellBtn");
-        console.log("Sell buttons found:", sellButtons.length);
-        sellButtons.forEach(btn => {
-            btn.addEventListener("click", () => {
-                console.log("Sell clicked for:", btn.dataset.item);
-                handleSellItem(btn.dataset.item);
-            }, { once: true });
-        });
+    // Populate armor list
+    if (armorList) {
+        armorList.innerHTML = Object.keys(equipment)
+            .filter(item => equipment[item].type === "armor")
+            .map(item => {
+                const data = equipment[item];
+                return `<p>${item}: ${data.price} Gold <button class="buyBtn" data-item="${item}">Buy</button></p>`;
+            })
+            .join("") || "<p>No armor available.</p>";
     }
+
+    // Populate consumable list
+    if (useableList) {
+        useableList.innerHTML = Object.keys(items)
+            .filter(item => items[item].price && !equipment[item])
+            .map(item => {
+                const data = items[item];
+                return `<p>${item}: ${data.price} Gold <button class="buyBtn" data-item="${item}">Buy</button></p>`;
+            })
+            .join("") || "<p>No useable available.</p>";
+    }
+
+    // Populate sell list
+    if (sellList) {
+        sellList.innerHTML = gameState.inventory
+            .map(item => {
+                const data = equipment[item.name] || items[item.name] || {};
+                const sellPrice = data.sellPrice !== undefined
+                    ? data.sellPrice
+                    : (data.price !== undefined ? Math.floor(data.price / 2) : 1);
+                return `<p>${item.name} (${item.quantity}): ${sellPrice} Gold <button class="sellBtn" data-item="${item.name}">Sell</button></p>`;
+            })
+            .join("") || "<p>No items to sell.</p>";
+    }
+
+    // Attach buy button listeners
+    const buyButtons = document.querySelectorAll(".buyBtn");
+    buyButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            console.log("Buy clicked for:", btn.dataset.item);
+            const item = btn.dataset.item;
+            const price = equipment[item]?.price || items[item]?.price;
+            if (price) handleBuyItem(item, price);
+        });
+    });
+
+    // Attach sell button listeners
+    const sellButtons = document.querySelectorAll(".sellBtn");
+    sellButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            console.log("Sell clicked for:", btn.dataset.item);
+            handleSellItem(btn.dataset.item);
+        });
+    });
 }
 
 // ============================================================================
@@ -1428,64 +1545,97 @@ document.addEventListener("DOMContentLoaded", () => {
     const page = window.location.pathname;
 
     if (page.includes("index.html")) {
+        // [Unchanged index.html logic]
         if (gameState.class) {
             window.location.href = "camp.html";
         } else {
-            document.getElementById("warriorBtn")?.addEventListener("click", () => {
-                gameState.class = "warrior";
-                gameState.stats = { ...classes.warrior.stats };
-                gameState.ability = classes.warrior.ability;
-                gameState.playerName = "Torin Blackthorne";
-                savePlayerData();
-                setTimeout(() => window.location.href = "camp.html", 1000);
-            });
-            document.getElementById("rogueBtn")?.addEventListener("click", () => {
-                gameState.class = "rogue";
-                gameState.stats = { ...classes.rogue.stats };
-                gameState.ability = classes.rogue.ability;
-                gameState.playerName = "Lira Swiftblade";
-                savePlayerData();
-                setTimeout(() => window.location.href = "camp.html", 1000);
-            });
-            document.getElementById("guardianBtn")?.addEventListener("click", () => {
-                gameState.class = "guardian";
-                gameState.stats = { ...classes.guardian.stats };
-                gameState.ability = classes.guardian.ability;
-                gameState.playerName = "Thane Ironwall";
-                savePlayerData();
-                setTimeout(() => window.location.href = "camp.html", 1000);
-            });
+            const warriorBtn = document.getElementById("warriorBtn");
+            if (warriorBtn) {
+                warriorBtn.addEventListener("click", () => {
+                    gameState.class = "warrior";
+                    gameState.stats = { ...classes.warrior.stats };
+                    gameState.ability = classes.warrior.ability;
+                    gameState.playerName = "Torin Blackthorne";
+                    savePlayerData();
+                    setTimeout(() => window.location.href = "camp.html", 1000);
+                });
+            }
+            const rogueBtn = document.getElementById("rogueBtn");
+            if (rogueBtn) {
+                rogueBtn.addEventListener("click", () => {
+                    gameState.class = "rogue";
+                    gameState.stats = { ...classes.rogue.stats };
+                    gameState.ability = classes.rogue.ability;
+                    gameState.playerName = "Lira Swiftblade";
+                    savePlayerData();
+                    setTimeout(() => window.location.href = "camp.html", 1000);
+                });
+            }
+            const guardianBtn = document.getElementById("guardianBtn");
+            if (guardianBtn) {
+                guardianBtn.addEventListener("click", () => {
+                    gameState.class = "guardian";
+                    gameState.stats = { ...classes.guardian.stats };
+                    gameState.ability = classes.guardian.ability;
+                    gameState.playerName = "Thane Ironwall";
+                    savePlayerData();
+                    setTimeout(() => window.location.href = "camp.html", 1000);
+                });
+            }
         }
     } else if (page.includes("camp.html")) {
         showAction(localStorage.getItem("lastActionMessage") || "You’ve arrived at camp.");
-        document.getElementById("exploreBtn")?.addEventListener("click", () => {
-            showAction("You head into the wild forest...");
-            savePlayerData();
-            setTimeout(() => window.location.href = "exploration.html", 1000);
-        });
-        document.getElementById("shopBtn")?.addEventListener("click", () => {
-            showAction("You approach the merchant...");
-            savePlayerData();
-            setTimeout(() => window.location.href = "shop.html", 1000);
-        });
-        document.getElementById("shortRestBtn")?.addEventListener("click", () => {
-            const roll = rollDice(20);
-            const message = roll >= 6 ? `You rest well (+5 HP).` : "Ambush!";
-            if (roll >= 6) gameState.hp = Math.min(MAX_HP, gameState.hp + 5);
-            showAction(message);
-            savePlayerData();
-            updateUI();
-            if (roll < 6) setTimeout(() => window.location.href = "ambush.html", 1000);
-        });
+        const exploreBtn = document.getElementById("exploreBtn");
+        if (exploreBtn) {
+            exploreBtn.addEventListener("click", () => {
+                showAction("You head into the wild forest...");
+                savePlayerData();
+                setTimeout(() => window.location.href = "exploration.html", 1000);
+            });
+        }
+        const shopBtn = document.getElementById("shopBtn");
+        if (shopBtn) {
+            shopBtn.addEventListener("click", () => {
+                showAction("You approach the merchant's stall...");
+                savePlayerData();
+                setTimeout(() => window.location.href = "shop.html", 1000);
+            });
+        }
         const equipBtn = document.getElementById("equipBtn");
         if (equipBtn) {
             equipBtn.addEventListener("click", () => {
-                console.log("Equip button clicked");
-                showAction("Choose your equipment...");
                 showEquipMenu();
             });
+        }
+        const shortRestBtn = document.getElementById("shortRestBtn");
+        if (shortRestBtn) {
+            shortRestBtn.addEventListener("click", () => {
+                if (combatState.active) {
+                    showAction("You cannot rest while in combat!");
+                    return;
+                }
+                const ambushChance = rollDice(100);
+                if (ambushChance <= 20) {
+                    showAction("You’re ambushed during your rest!");
+                    localStorage.setItem("lastActionMessage", "You were ambushed during your rest!");
+                    savePlayerData();
+                    setTimeout(() => {
+                        try {
+                            window.location.href = "ambush.html";
+                        } catch (e) {
+                            console.error("Failed to redirect to ambush.html:", e);
+                            showAction("Error: Could not load ambush page!");
+                        }
+                    }, 1000);
+                } else {
+                    gameState.hp = Math.min(gameState.maxHp, gameState.hp + 10);
+                    showAction("You take a short rest and recover 10 HP!");
+                    updateUI();
+                    savePlayerData();
+                }
+            });
         } else {
-            console.error("Equip button not found");
+            console.error("shortRestBtn not found in camp.html. Check button ID in HTML.");
         }
     } else if (page.includes("exploration.html")) {
         document.getElementById("forestBtn")?.addEventListener("click", () => {
@@ -1506,12 +1656,6 @@ document.addEventListener("DOMContentLoaded", () => {
             } else if (roll === 19) {
                 const specialRoll = rollDice(6);
                 enemyType = [
-                    //"banditScout",
-                    //"banditBrute",
-                    //"banditSniper",
-                    //"banditThug",
-                    //"banditRogue",
-                    //"banditLeader",
                     "valonTheImmortal",
                     "dirtyDave",
                     "hoshiTheSloth"
@@ -1521,58 +1665,115 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             startBattle(enemyType);
         });
-        document.getElementById("campBtn")?.addEventListener("click", () => {
-            const message = "You return to camp.";
-            showAction(message);
-            savePlayerData();
-            localStorage.setItem("lastActionMessage", message);
-            setTimeout(() => window.location.href = "camp.html", 1000);
-        });
         const kingBtn = document.getElementById("kingBtn");
-        if (gameState.level >= 5 && kingBtn) {
+        if (kingBtn && gameState.level >= 5) {
             kingBtn.classList.remove("hidden");
             kingBtn.addEventListener("click", () => {
-                showAction("You confront the Bandit King!");
+                showAction("You face the Bandit King!");
                 savePlayerData();
                 startBattle("banditKing");
             });
-        } else if (kingBtn) {
-            kingBtn.textContent = "Bandit King (Reach Level 5)";
-            kingBtn.disabled = true;
         }
-    } else if (page.includes("ambush.html")) {
-        const enemyType = Object.keys(enemies)[rollDice(Object.keys(enemies).length) - 1];
-        startBattle(enemyType);
-        const banditEnemyImg = document.getElementById("banditEnemy");
-        if (banditEnemyImg) {
-            banditEnemyImg.src = enemies[enemyType].image;
-            banditEnemyImg.classList.remove("hidden");
+        // Add event listener for campBtn
+        const campBtn = document.getElementById("campBtn");
+        if (campBtn) {
+            campBtn.addEventListener("click", () => {
+                if (combatState.active) {
+                    showAction("You cannot return to camp while in combat!");
+                    return;
+                }
+                showAction("You trek back to the safety of camp.");
+                localStorage.setItem("lastActionMessage", "You’ve returned to camp from the forest.");
+                savePlayerData();
+                setTimeout(() => window.location.href = "camp.html", 1000);
+            });
+        } else {
+            console.error("campBtn not found in exploration.html");
         }
     } else if (page.includes("shop.html")) {
-        showAction("Welcome to the shop!");
         updateShopUI();
-        const sellBtn = document.getElementById("sellBtn");
-        const sellList = document.getElementById("sellList");
-        sellBtn?.addEventListener("click", () => {
-            const isHidden = sellList.classList.contains("hidden");
-            sellList.classList.toggle("hidden");
-            sellBtn.textContent = isHidden ? "HIDE SELL" : "SELL ITEMS";
-            if (isHidden) {
-                updateShopUI();
-                showAction("What would you like to sell?");
-            } else {
-                showAction("Anything else to buy?");
-            }
+        const tabs = document.querySelectorAll(".shop-tab");
+        const shopLists = document.querySelectorAll(".shop-list");
+        tabs.forEach(tab => {
+            tab.addEventListener("click", () => {
+                tabs.forEach(t => t.classList.remove("active"));
+                shopLists.forEach(list => list.classList.add("hidden"));
+                tab.classList.add("active");
+                const targetList = document.getElementById(tab.dataset.tab);
+                if (targetList) targetList.classList.remove("hidden");
+            });
         });
-        document.getElementById("returnBtn")?.addEventListener("click", () => {
-            showAction("You head back to camp...");
-            savePlayerData();
-            setTimeout(() => window.location.href = "camp.html", 1000);
-        });
+        const returnBtn = document.getElementById("returnBtn");
+        if (returnBtn) {
+            returnBtn.addEventListener("click", () => {
+                showAction("You leave the shop.");
+                savePlayerData();
+                setTimeout(() => window.location.href = "camp.html", 1000);
+            });
+        }
     } else if (page.includes("gameover.html")) {
-        document.getElementById("restartBtn")?.addEventListener("click", () => {
-            localStorage.clear();
-            window.location.href = "index.html";
-        });
+        const victory = localStorage.getItem("victory") === "true";
+        console.log("Victory flag:", localStorage.getItem("victory"), "Parsed as victory:", victory); // Debug log
+        const gameOverScreen = document.getElementById("gameOverScreen");
+        const messageEl = document.getElementById("gameOverMessage");
+        const titleEl = document.getElementById("gameOverTitle");
+        if (gameOverScreen) {
+            gameOverScreen.classList.add(victory ? "victory" : "defeat");
+        }
+        if (titleEl) {
+            titleEl.textContent = victory ? "Victory!" : "Game Over";
+        }
+        if (messageEl) {
+            messageEl.textContent = victory
+                ? "Victory! You have defeated the Bandit King and saved the forest!"
+                : "Defeat... The forest remains under the Bandit King's control.";
+        }
+        const restartBtn = document.getElementById("restartBtn");
+        if (restartBtn) {
+            restartBtn.addEventListener("click", () => {
+                localStorage.removeItem("gameState");
+                localStorage.removeItem("victory");
+                window.location.href = "index.html";
+            });
+        }
+    } else if (page.includes("ambush.html")) {
+        // Display last action message
+        showAction(localStorage.getItem("lastActionMessage") || "You’ve been ambushed!");
+        localStorage.removeItem("lastActionMessage"); // Clear message
+
+        // Select random enemy for ambush
+        const roll = rollDice(20);
+        let enemyType = null;
+        if (roll <= 10) {
+            enemyType = "bandit"; // 50% chance
+        } else if (roll <= 14) {
+            enemyType = "wolves"; // 20% chance
+        } else if (roll <= 16) {
+            enemyType = "thief"; // 10% chance
+        } else if (roll <= 18) {
+            enemyType = "trickster"; // 10% chance
+        } else {
+            enemyType = "bountyHunter"; // 10% chance
+        }
+
+        // Start ambush battle
+        startBattle(enemyType);
+
+        // Set up campBtn
+        const campBtn = document.getElementById("campBtn");
+        if (campBtn) {
+            campBtn.addEventListener("click", () => {
+                if (combatState.active) {
+                    showAction("You cannot return to camp while in combat!");
+                    return;
+                }
+                showAction("You trek back to the safety of camp.");
+                localStorage.setItem("lastActionMessage", "You’ve returned to camp after an ambush.");
+                savePlayerData();
+                setTimeout(() => window.location.href = "camp.html", 1000);
+            });
+        } else {
+            console.error("campBtn not found in ambush.html");
+        }
     }
 });

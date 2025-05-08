@@ -16,6 +16,13 @@
             <h1>Game Over</h1>
             <p>You fought bravely, but your journey ends here...</p>
             <button id="restartBtn">Try Again</button>
+            <button id="feedbackBtn">Send Feedback</button>
+        </div>
+        <div id="victoryScreen" class="hidden">
+            <h1>Victory!</h1>
+            <p>Congratulations, <span id="playerName">${localStorage.getItem("playerName") || "Hero"}</span>! You have defeated the Bandit King and brought peace to the forest!</p>
+            <button id="restartBtnVictory">Start a New Adventure</button>
+            <button id="feedbackBtnVictory">Send Feedback</button>
         </div>
     </main>
     <script src="/app.js"></script>
