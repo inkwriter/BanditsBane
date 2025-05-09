@@ -288,14 +288,40 @@ a button {
 
 #banditEnemy {
     width: 100%;
-    height: 250px;
+    max-width: 500px;
+    height: 100%;
+    object-fit: contain;
+}
+
+#combatMenu {
     display: flex;
     justify-content: center;
-    align-items: center;
-    margin-top: 20px;
-    background-color: yellow;
-    border: 2px solid black;
-    border-radius: 10px;
+    gap: 10px;
+    margin: 10px;
+    flex-wrap: wrap; /* Allow buttons to wrap to the next line */
+    width: 100%; /* Ensure it fits within the parent container */
+}
+
+#combatMenu button {
+    background: #2d6a4f;
+    color: #e9ffdb;
+    border: 1px solid #40916c;
+    padding: 8px 16px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    font-family: 'Alegreya', serif;
+    flex: 1 1 150px; /* Allow buttons to wrap at a minimum width of 150px */
+    text-align: center;
+    box-sizing: border-box;
+}
+
+#combatMenu button:hover {
+    background: #40916c;
+}
+
+#backOption:hover {
+    background: #ffd670;
 }
 
 #banditKingPic {
@@ -358,6 +384,19 @@ a button {
 /* Enemy HP */
 .enemyHP {
     display: flex;
+}
+
+.enemy-image-container {
+    width: 100%;
+    max-width: 300px; /* Set a reasonable max-width for the square */
+    height: 300px; /* Equal to max-width to make it a square */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    background-color: yellow; /* Keep the yellow background */
+    border: 2px solid black;
+    border-radius: 10px;
 }
 
 /* Combat Feedback */
@@ -439,6 +478,9 @@ a button {
 .combat-container {
     text-align: center;
     position: relative;
+    width: 100%;
+    max-width: 500px; /* Match the game-screen max-width for consistency */
+    margin: 0 auto;
 }
 
 /* Dialogue Boxes */
@@ -881,6 +923,25 @@ a button {
     background: #ffd670;
 }
 
+.feedback-form {
+    width: 100%;
+    max-width: 500px; /* Match the game-screen max-width */
+    margin: 20px auto;
+    text-align: center;
+}
+
+.feedback-form h2 {
+    font-family: 'Alegreya', serif;
+    color: #ffcc29; /* Gold color for headings */
+    margin-bottom: 15px;
+}
+
+.feedback-form iframe {
+    border: 2px solid #ffd670; /* Gold border to match buttons */
+    border-radius: 5px;
+    background-color: #283618; /* Dark green background to match inventory dropdown */
+}
+
 @keyframes victoryGlow {
     from {
         box-shadow: 0 0 20px rgba(255, 204, 41, 0.5);
@@ -982,6 +1043,15 @@ a button {
         height: 60px;
         font-size: 18px;
     }
+
+    .enemy-image-container {
+        max-width: 350px;
+        height: 350px; /* Keep it a square */
+    }
+
+    .feedback-form iframe {
+        height: 600px; /* Reduce height on smaller screens */
+    }
 }
 
 /* Desktop and Large Screens (1024px and up) */
@@ -1073,6 +1143,11 @@ a button {
 
     #kingBtn {
         height: 90px;
+    }
+
+    .enemy-image-container {
+        max-width: 400px;
+        height: 400px; /* Keep it a square */
     }
 }
 
