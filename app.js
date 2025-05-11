@@ -90,7 +90,7 @@ const enemies = {
         stats: { attack: 2, speed: 3, defense: 2 },
         goldReward: 10,
         xpReward: 20,
-        image: "/assets/img_folder/enemies/bandit.jpeg",
+        image: "assets/img_folder/enemies/bandit.jpeg",
         damage: "1d4",
         weapon: "shortSword",
         abilities: [
@@ -106,7 +106,7 @@ const enemies = {
         stats: { attack: 3, speed: 5, defense: 1 },
         goldReward: 5,
         xpReward: 25,
-        image: "/assets/img_folder/enemies/wolves.jpg",
+        image: "assets/img_folder/enemies/wolves.jpg",
         damage: "1d6",
         weapon: null,
         abilities: [
@@ -122,7 +122,7 @@ const enemies = {
         stats: { attack: 2, speed: 6, defense: 2 },
         goldReward: 150,
         xpReward: 15,
-        image: "/assets/img_folder/enemies/thief.jpg",
+        image: "assets/img_folder/enemies/thief.jpg",
         damage: "1d8",
         weapon: "dagger",
         abilities: [
@@ -138,7 +138,7 @@ const enemies = {
         stats: { attack: 1, speed: 7, defense: 1 },
         goldReward: 20,
         xpReward: 80,
-        image: "/assets/img_folder/enemies/trickster.jpg",
+        image: "assets/img_folder/enemies/trickster.jpg",
         damage: "1d8",
         weapon: "dagger",
         abilities: [
@@ -154,7 +154,7 @@ const enemies = {
         stats: { attack: 4, speed: 4, defense: 3 },
         goldReward: 25,
         xpReward: 35,
-        image: "/assets/img_folder/enemies/bountyHunter.jpg",
+        image: "assets/img_folder/enemies/bountyHunter.jpg",
         damage: "1d8",
         weapon: "bow",
         abilities: [
@@ -168,9 +168,9 @@ const enemies = {
         name: "hoshiTheSloth",
         hp: 50,
         stats: { attack: 15, defense: 1, speed: 9 },
-        goldReward: 5000,
+        goldReward: 1000,
         xpReward: 50,
-        image: "/assets/img_folder/enemies/hoshithesloth.jpg",
+        image: "assets/img_folder/enemies/hoshithesloth.jpg",
         damage: "1d10",
         weapon: "dagger",
         abilities: [
@@ -193,9 +193,9 @@ const enemies = {
         name: "valonTheImmortal",
         hp: 50,
         stats: { attack: 6, defense: 15, speed: 9 },
-        goldReward: 5000,
+        goldReward: 1000,
         xpReward: 50,
-        image: "/assets/img_folder/enemies/valontheimmortal.jpg",
+        image: "assets/img_folder/enemies/valontheimmortal.jpg",
         damage: "1d10",
         weapon: "longsword",
         abilities: [
@@ -209,9 +209,9 @@ const enemies = {
         name: "dirtyDave",
         hp: 50,
         stats: { attack: 10, defense: 1, speed: 15 },
-        goldReward: 5000,
+        goldReward: 1000,
         xpReward: 50,
-        image: "/assets/img_folder/enemies/dirtydave.jpg",
+        image: "assets/img_folder/enemies/dirtydave.jpg",
         damage: "1d10",
         weapon: "dagger",
         abilities: [
@@ -236,7 +236,7 @@ const boss = {
         stats: { attack: 6, speed: 5, defense: 5 },
         goldReward: 100,
         xpReward: 150,
-        image: "/assets/img_folder/enemies/banditKing.jpeg",
+        image: "assets/img_folder/enemies/banditKing.jpeg",
         damage: "1d10",
         weapon: "longsword",
         abilities: [
