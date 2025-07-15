@@ -10,9 +10,6 @@
 - [Features](#features)
 - [How to Play](#how-to-play)
 - [Installation](#installation)
-- [Game Structure](#game-structure)
-- [Contributing](#contributing)
-- [Feedback](#feedback)
 
 ---
 
